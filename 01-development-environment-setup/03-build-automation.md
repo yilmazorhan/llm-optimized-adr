@@ -30,21 +30,21 @@ Maven Wrapper (mvnw) configuration **MUST** be present and functional before any
 
 **Gradle**: Rejected. **MUST** avoid.
 
-Quarkus official documentation and code generator (`code.quarkus.io`) use Maven as the default build tool. The Quarkus Maven plugin is maintained by the core team and receives updates before the Gradle plugin. Gradle support is community-maintained with documented limitations in multi-module dev mode.
+Quarkus official documentation and code generator (`code.quarkus.io`) use Maven as the default build tool (https://quarkus.io/guides/maven-tooling). The Quarkus Maven plugin is maintained by the core team and receives updates before the Gradle plugin. The Quarkus Gradle plugin documentation (https://quarkus.io/guides/gradle-tooling) notes that multi-module dev mode requires additional configuration and has known limitations compared to the Maven plugin.
 
 **System-wide Maven Installation**: Rejected. **MUST** avoid.
 
-System-wide installation creates version inconsistencies across team members.
+System-wide installation creates version inconsistencies across team members. The Maven Wrapper documentation (https://maven.apache.org/wrapper/) specifies that the wrapper pins a specific Maven distribution URL per project, ensuring all developers and CI systems use the exact same version without relying on locally installed Maven.
 
 **MAY** be used as fallback for Maven Wrapper creation only.
 
 # Rationale:
 
-Quarkus official guides, CLI, and `code.quarkus.io` default to Maven project structure. The Quarkus Maven plugin is core-team-maintained; the Gradle plugin is community-driven with a smaller contributor base.
+Quarkus official guides, CLI, and `code.quarkus.io` default to Maven project structure (https://quarkus.io/guides/maven-tooling). The Quarkus Maven plugin is core-team-maintained; the Gradle plugin is community-driven with a smaller contributor base (https://quarkus.io/guides/gradle-tooling).
 
-Maven Wrapper pins the exact build tool version per repository, eliminating version drift across developer machines, CI/CD runners, and production builds.
+Maven Wrapper pins the exact build tool version per repository, eliminating version drift across developer machines, CI/CD runners, and production builds (https://maven.apache.org/wrapper/).
 
-Maven's declarative `pom.xml` uses XML configuration only, requiring no Groovy or Kotlin programming knowledge to read or modify.
+Maven's declarative `pom.xml` uses XML configuration only (https://maven.apache.org/pom.html), requiring no Groovy or Kotlin programming knowledge to read or modify.
 
 # Implementation Guidelines:
 
