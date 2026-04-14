@@ -63,13 +63,13 @@ Maven multi-module projects enforce compile-time boundaries: a module can only a
 > [!WARNING]
 > The following patterns are explicitly **FORBIDDEN**.
 
-### ❌ The "God" Shared Library
-**Do NOT** create a single `common-shared` library containing everything.
+### The "God" Shared Library — FORBIDDEN
+**MUST NOT** create a single `common-shared` library containing everything.
 *   *Bad*: A library containing `UserEntity` (DB), `UserResponse` (HTTP), and `StringUtil`.
 *   *Why*: Forces the Web API to depend on Database libraries. Violates architectural boundaries.
 
-### ❌ Mixed Concern Libraries
-**Do NOT** mix layers in a single library.
+### Mixed Concern Libraries — FORBIDDEN
+**MUST NOT** mix layers in a single library.
 *   *Bad*: A library with `jakarta.persistence.*` (DB) and `jakarta.ws.rs.*` (HTTP) dependencies.
 *   *Correction*: Split into `user-data-lib` and `user-api-lib`.
 
@@ -148,15 +148,13 @@ package: ## Package application
 > [!CAUTION]
 > The following library names are **EXPLICITLY FORBIDDEN** as they encourage "God Library" anti-patterns:
 
-- ❌ `shared-library`
-- ❌ `common-library`
-- ❌ `utils-library`
-- ❌ `core-library`
-- ❌ `base-library`
-- ❌ `platform-shared`
-- ❌ `common-utils`
-
-**Why**: These names are ambiguous and naturally attract unrelated code over time, violating single responsibility.
+- **MUST NOT** use `shared-library`
+- **MUST NOT** use `common-library`
+- **MUST NOT** use `utils-library`
+- **MUST NOT** use `core-library`
+- **MUST NOT** use `base-library`
+- **MUST NOT** use `platform-shared`
+- **MUST NOT** use `common-utils`
 
 ---
 
@@ -167,12 +165,12 @@ package: ## Package application
 
 ## Library Creation Checklist
 
-- [ ] **Single Concern Identified**: Can you describe the library's purpose in ONE sentence without using "and"?
-- [ ] **Name Specificity**: Does the name clearly indicate the single concern? (e.g., `exception-library` not `shared-library`)
-- [ ] **Forbidden Name Check**: Is the proposed name NOT in the forbidden list above?
-- [ ] **Dependency Check**: Will this library require ONLY standard Java or framework-agnostic dependencies?
-- [ ] **No Mixed Layers**: Will this library avoid mixing HTTP (`jakarta.ws.rs.*`) and DB (`jakarta.persistence.*`) concerns?
-- [ ] **Catalog Compliance**: Is this library in the approved catalog OR has architecture review been requested?
+- [ ] **Single Concern Identified**: The library's purpose **MUST** be describable in ONE sentence without using "and".
+- [ ] **Name Specificity**: The name **MUST** clearly indicate the single concern (e.g., `exception-library` not `shared-library`).
+- [ ] **Forbidden Name Check**: The proposed name **MUST NOT** be in the forbidden list above.
+- [ ] **Dependency Check**: The library **MUST** require ONLY standard Java or framework-agnostic dependencies.
+- [ ] **No Mixed Layers**: The library **MUST NOT** mix HTTP (`jakarta.ws.rs.*`) and DB (`jakarta.persistence.*`) concerns.
+- [ ] **Catalog Compliance**: The library **MUST** be in the approved catalog OR architecture review **MUST** be requested.
 
 ## Code Review Gate
 
