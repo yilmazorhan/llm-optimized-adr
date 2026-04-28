@@ -15,6 +15,13 @@ Docker **MUST** be the containerization platform for all development and deploym
 - Custom networks **SHOULD** be used for service discovery between containers.
 - Cross-platform support (macOS/Linux) **MUST** be maintained.
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | Docker Engine and Compose installation/configuration, container networking and resource management, cross-platform container support (macOS/Linux), CI/CD container integration, Dockerfile security hardening |
+| **Approver** | Tech Lead / Software Architect | Container platform selection trade-offs (Docker vs. Podman vs. Kubernetes), Quarkus Dev Services and Testcontainers compatibility assessment, infrastructure resource planning, security policy enforcement for container workloads |
+
 # Constraints:
 
 - **MUST NOT** use Docker versions below 24.0 or Docker Compose below 2.24.

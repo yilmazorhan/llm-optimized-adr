@@ -12,6 +12,13 @@ A graduated containerized development environment strategy **SHALL** be implemen
 - Testcontainers for E2E testing (**MUST** for comprehensive testing)
 - **Resource Management**: **MUST** implement selective service startup
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | Docker Compose service orchestration and profiles, container networking (host-to-container communication, custom networks), resource management and health checks, Quarkus Dev Services and Testcontainers runtime configuration, Prometheus/Grafana/Jaeger container integration |
+| **Approver** | Tech Lead / Software Architect | Graduated containerization strategy design, trade-offs between Dev Services/Compose/Testcontainers layers, developer experience and feedback loop optimization, infrastructure service selection and resource planning |
+
 # Constraints:
 
 - **MUST** have Docker 24.0+ runtime on all development machines (ADR-05).

@@ -1,9 +1,15 @@
-
 # Issue: Toolchain Version Management for Development Consistency
 
 Unpinned tool versions create build failures, "works on my machine" issues, environment drift, increased debugging time, and reduced team productivity.
 
 This affects JDK, Maven, Docker, and other development tools across local development, CI/CD pipelines, and production builds.
+
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | CI/CD pipeline design, Docker and container runtime internals, shell scripting for environment validation, cross-platform toolchain distribution (SDKMAN, Maven Wrapper), infrastructure-as-code |
+| **Approver** | Tech Lead / Software Architect | Cross-team tooling decisions, build reproducibility trade-offs, JDK distribution landscape evaluation, Maven dependency resolution internals, onboarding friction assessment |
 
 # Decision:
 
@@ -80,6 +86,7 @@ This approach uses built-in tooling (SDKMAN `.sdkmanrc`, Maven Wrapper `.mvn/wra
 
 2. **Maven Version Control**:
    - Projects **MUST** use Maven 3.9.8 enforced via Maven Wrapper
+   - Use maven to create wrappers  ```mvn wrapper:wrapper -Dmaven=3.9.8```
    - Version **MUST** be pinned in `.mvn/wrapper/maven-wrapper.properties`:
      ```properties
      distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.8/apache-maven-3.9.8-bin.zip
@@ -305,6 +312,13 @@ if [[ ! -f ".sdkmanrc" ]]; then
   exit 1
 fi
 echo "✅ .sdkmanrc present"
+
+# Check Maven Wrapper JAR exists (MUST NOT be excluded by .gitignore)
+if [[ ! -f ".mvn/wrapper/maven-wrapper.jar" ]]; then
+  echo "❌ maven-wrapper.jar missing — must be present for wrapper to function"
+  exit 1
+fi
+echo "✅ Maven Wrapper JAR present"
 
 # Verify Java pinning
 if ! grep -q "java=21.0.4-tem" .sdkmanrc; then

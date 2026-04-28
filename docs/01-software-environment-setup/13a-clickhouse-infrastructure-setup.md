@@ -11,6 +11,13 @@ Use **ClickHouse 24.x LTS** as the primary analytical database with the followin
 - ClickHouse JDBC client 0.6.3 Maven dependencies
 - Profile-based application configuration (%dev/%test/%prod)
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | ClickHouse Docker Compose service configuration, Tabix Web UI integration, Prometheus metrics endpoint setup, profile-based application configuration (%dev/%test/%prod), backup and disaster recovery procedures, Kubernetes deployment |
+| **Approver** | Tech Lead / Software Architect | Analytical database selection trade-offs (ClickHouse vs. PostgreSQL vs. TimescaleDB), OLAP workload architecture, Maven dependency governance, infrastructure service integration with observability stack |
+
 # Constraints:
 
 - ClickHouse **MUST** be deployed using version 24.x LTS for stability and long-term support

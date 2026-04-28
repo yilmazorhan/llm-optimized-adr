@@ -12,6 +12,13 @@ Use Maven Wrapper (`mvnw`) and Docker Compose for automated, reproducible develo
 - A `setup.sh` script **MUST** validate prerequisites and bootstrap the environment in a single step.
 - Multi-module Maven structure **MUST** use dependency management via a parent POM.
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | Shell scripting for cross-platform setup automation (macOS/Linux), Makefile design for build/test/run targets, Docker Compose service orchestration and health checks, Maven Wrapper integration, developer onboarding workflow optimization |
+| **Approver** | Tech Lead / Software Architect | Development workflow standardization decisions, prerequisite toolchain trade-offs, multi-module Maven structure governance, infrastructure service selection (ClickHouse, Jaeger, Prometheus, Grafana) |
+
 # Constraints:
 
 - **MUST NOT** require any tools beyond Java 21 (Eclipse Temurin 21.0.4), Docker 24.0+, and Docker Compose 2.24+.
@@ -349,6 +356,13 @@ else
   echo "❌ Makefile not found"
   exit 1
 fi
+
+# Verify Maven Wrapper JAR exists (MUST NOT be excluded by .gitignore)
+if [[ ! -f ".mvn/wrapper/maven-wrapper.jar" ]]; then
+  echo "❌ maven-wrapper.jar missing — must be present for wrapper to function"
+  exit 1
+fi
+echo "✅ Maven Wrapper JAR present"
 
 # Verify Docker Compose auto-detection in Makefile
 if grep -q "DOCKER_COMPOSE" Makefile; then

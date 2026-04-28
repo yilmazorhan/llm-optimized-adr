@@ -17,6 +17,13 @@ Maven Wrapper (mvnw) configuration **MUST** be present and functional before any
 - All build commands **MUST** use Maven Wrapper (`./mvnw`)
 - Maven Wrapper **MUST** be validated before any development activities
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | Maven Wrapper configuration and distribution, CI/CD pipeline build integration, dependency management strategies, multi-module Maven project structure, build reproducibility enforcement |
+| **Approver** | Tech Lead / Software Architect | Build tool selection trade-offs (Maven vs. Gradle), Quarkus framework tooling ecosystem assessment, dependency governance policies, cross-team build standardization decisions |
+
 # Constraints:
 
 ## Technical:
@@ -24,6 +31,7 @@ Maven Wrapper (mvnw) configuration **MUST** be present and functional before any
 - **MUST NOT** use system-wide Maven installations for project builds
 - **MUST NOT** allow different Maven versions across team members
 - **MUST NOT** proceed with code generation without validated Maven Wrapper
+- **MUST NOT** exclude `.mvn/wrapper/maven-wrapper.jar` from version control — the JAR is a required component for the wrapper to function
 - All dependency versions **MUST** be defined in the `<properties>` section of the parent `pom.xml` and referenced using property placeholders (e.g., `<version>${clickhouse.version}</version>`). **MUST NOT** hardcode version numbers directly in `<dependency>` or `<plugin>` declarations outside `<dependencyManagement>` or `<pluginManagement>`. This ensures a single source of truth for all versions, prevents version drift across modules, and simplifies dependency upgrades.
 
 # Alternatives:
@@ -51,17 +59,24 @@ Maven's declarative `pom.xml` uses XML configuration only (https://maven.apache.
 ## Mandatory Setup Steps:
 
 1. **Maven Wrapper Verification and Creation**:
-   - Verify Maven Wrapper presence before any development activities
-   - If wrapper missing, create using system Maven (temporary exception):
-     ```bash
-     # Create Maven Wrapper with specific version
-     mvn -N wrapper:wrapper -Dmaven=3.9.8
-     ```
-   - Commit wrapper files to version control:
-     ```bash
-     git add mvnw mvnw.cmd .mvn/
-     git commit -m "Add Maven Wrapper"
-     ```
+    - Verify Maven Wrapper presence before any development activities
+    - **MUST** ensure all three wrapper components exist: `mvnw`, `mvnw.cmd`, and `.mvn/wrapper/maven-wrapper.jar`
+    - **MUST NOT** commit `.gitignore` rules that exclude `maven-wrapper.jar` — the JAR is a required component
+    - If wrapper missing, create using system Maven (temporary exception):
+      ```bash
+      # Create Maven Wrapper with specific version
+      mvn -N wrapper:wrapper -Dmaven=3.9.8
+      ```
+    - If `maven-wrapper.jar` is missing (e.g., excluded by .gitignore), download it directly:
+      ```bash
+      curl -sL -o .mvn/wrapper/maven-wrapper.jar \
+        https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.2.0/maven-wrapper-3.2.0.jar
+      ```
+    - Commit wrapper files to version control:
+      ```bash
+      git add mvnw mvnw.cmd .mvn/wrapper/maven-wrapper.jar .mvn/wrapper/maven-wrapper.properties
+      git commit -m "Add Maven Wrapper"
+      ```
 
 2. **Maven Wrapper Validation**:
    - Validate wrapper functionality after creation:
@@ -191,14 +206,14 @@ Maven's declarative `pom.xml` uses XML configuration only (https://maven.apache.
 set -e
 echo "Validating Maven Build Automation..."
 
-# Check Maven Wrapper files exist
-for file in mvnw mvnw.cmd .mvn/wrapper/maven-wrapper.properties; do
+# Check Maven Wrapper files exist (MUST include maven-wrapper.jar)
+for file in mvnw mvnw.cmd .mvn/wrapper/maven-wrapper.properties .mvn/wrapper/maven-wrapper.jar; do
   if [[ ! -f "$file" ]]; then
     echo "❌ Missing: $file"
     exit 1
   fi
 done
-echo "✅ Maven Wrapper files present"
+echo "✅ Maven Wrapper files present (including maven-wrapper.jar)"
 
 # Verify Maven version
 MAVEN_VERSION=$(./mvnw -v 2>/dev/null | grep 'Apache Maven' | awk '{print $3}')

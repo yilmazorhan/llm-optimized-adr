@@ -8,6 +8,13 @@ Use Java Development Kit (JDK) version 21 or higher as the standard runtime envi
 
 All development, testing, and production environments utilize only stable, production-ready features while excluding preview or experimental functionality.
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | JDK distribution management (Temurin, SDKMAN), JVM tuning for containerized environments, CI/CD pipeline JDK validation, multi-stage Docker builds, cross-platform installation automation |
+| **Approver** | Tech Lead / Software Architect | JDK LTS roadmap evaluation, JVM feature adoption trade-offs (virtual threads, ZGC), Quarkus framework compatibility assessment, GraalVM native image feasibility decisions |
+
 # Constraints:
 - **MUST** Use SDKMAN for cross-platform JDK version management
 - **MUST** Maintain compatibility with Quarkus framework requirements (minimum JDK 17 for Quarkus 3.x)

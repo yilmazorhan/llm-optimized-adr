@@ -15,6 +15,13 @@ Use Quarkus framework version 3.32.2 as the standardized application framework f
 - RESTEasy Reactive (`quarkus-rest`) **MUST** be used for REST endpoint development
 - OpenTelemetry and Prometheus metrics integration **MUST** be configured
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Quarkus framework configuration and extension management, reactive programming with Mutiny and RESTEasy Reactive, GraalVM native compilation, build-time CDI (ArC), performance tuning (startup, memory, concurrency) |
+| **Approver** | Tech Lead / Software Architect | Application framework selection trade-offs (Quarkus vs. Spring Boot vs. Micronaut), reactive vs. imperative architecture decisions, extension ecosystem evaluation, observability stack integration strategy (OpenTelemetry, Prometheus) |
+
 # Constraints:
 
 - Startup time **MUST** be <2 seconds in JVM mode in containerized environments.
