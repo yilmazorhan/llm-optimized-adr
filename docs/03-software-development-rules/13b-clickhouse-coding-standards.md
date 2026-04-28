@@ -2,7 +2,7 @@
 
 ClickHouse requires specific coding patterns for schema design, client integration, and repository adapters that differ from traditional RDBMS approaches. This ADR defines the coding standards for working with ClickHouse in the application layer.
 
-**See also**: [13a-clickhouse-infrastructure-setup.md](../01-development-environment-setup/13a-clickhouse-infrastructure-setup.md) for Docker Compose, Maven dependencies, and application configuration.
+**See also**: [13a-clickhouse-infrastructure-setup.md](../01-software-environment-setup/13a-clickhouse-infrastructure-setup.md) for Docker Compose, Maven dependencies, and application configuration.
 
 # Decision:
 

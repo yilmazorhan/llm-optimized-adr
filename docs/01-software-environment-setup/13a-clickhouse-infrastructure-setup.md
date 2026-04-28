@@ -2,7 +2,7 @@
 
 Cloud-native microservices require a high-performance ClickHouse database environment for analytical workloads, event storage, audit logging, and time-series data. This ADR covers the infrastructure setup: Docker Compose services, Maven dependencies, application configuration, and validation.
 
-**See also**: [13b-clickhouse-coding-standards.md](../03-coding-style-standards-packaging/13b-clickhouse-coding-standards.md) for schema design, client configuration, and repository adapter implementation.
+**See also**: [13b-clickhouse-coding-standards.md](../03-software-development-rules/13b-clickhouse-coding-standards.md) for schema design, client configuration, and repository adapter implementation.
 
 # Decision:
 
