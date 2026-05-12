@@ -32,6 +32,18 @@ Adopt Google Java Style Guide with Quarkus-specific modifications, enforced thro
 
 Google Java Style Guide provides machine-enforceable formatting rules via the `google-java-format` tool, which Spotless integrates directly (https://github.com/diffplug/spotless/tree/main/plugin-maven#google-java-format). Checkstyle provides the official Google Checks configuration (`/google_checks.xml`) bundled with the Checkstyle distribution (https://checkstyle.sourceforge.io/google_style.html). PMD's complexity rules (CyclomaticComplexity, CognitiveComplexity) provide measurable thresholds that prevent methods from exceeding defined limits — these are not subjective review opinions but build-failing numeric checks (https://pmd.github.io/latest/pmd_rules_java_design.html). SpotBugs with FindSecBugs detects security vulnerabilities mapped to CWE identifiers at compile time (https://find-sec-bugs.github.io/). Running all four tools in the Maven lifecycle ensures every commit meets quality standards before merge.
 
+## Current Plugin Versions
+
+| Plugin | Version | Purpose |
+|--------|---------|---------|
+| spotless-maven-plugin | 3.4.0 | Code formatting (Google Java Format) |
+| maven-checkstyle-plugin | 3.6.0 | Style compliance validation |
+| maven-pmd-plugin | 3.26.0 | Code quality and complexity rules |
+| spotbugs-maven-plugin | 4.9.8.3 | Bug and security vulnerability detection |
+| findsecbugs-plugin | (bundled) | Security-specific SpotBugs rules |
+
+> **Note**: Plugin versions are managed in the parent `pom.xml` `<pluginManagement>` section. Update versions there and verify with `./mvnw clean verify`.
+
 # Implementation Guidelines:
 
 ## Maven Plugin Configuration:

@@ -26,6 +26,7 @@ Use Maven Wrapper (`mvnw`) and Docker Compose for automated, reproducible develo
 - Scripts and Makefiles **MUST** support both `docker compose` (plugin) and `docker-compose` (standalone) command variants.
 - **MUST NOT** store secrets or credentials in setup scripts or Makefile.
 - Infrastructure services **MUST** be verified as ready before declaring setup complete.
+- All Docker configuration files (Docker Compose files, Dockerfiles, environment files, and related configuration) **MUST** reside in the `local-env/` folder.
 
 # Alternatives:
 
@@ -88,6 +89,9 @@ dev: ## Start development server with live reload
 	# MUST include -am flag for multi-module projects
 	./mvnw quarkus:dev -pl container-app -am
 ```
+
+### Mandatory Runtime Execution Validation
+After any script, configuration file, or infrastructure file is created, it **MUST** be run in the real environment before marking the job as complete. Static validation (`bash -n`, `docker compose config`) is not sufficient. Runtime validation (`./setup.sh`, `make build`, `docker compose up`) **MUST** be required.
 
 ## Setup Process:
 

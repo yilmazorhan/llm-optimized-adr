@@ -20,6 +20,7 @@ Implement comprehensive Grafana-based monitoring dashboards with Prometheus metr
 - Critical alerts **MUST** be generated within 30 seconds of threshold breach
 - Monitoring data **MUST NOT** expose sensitive information or credentials
 - Dashboard access **MUST** be role-based and aligned with security policies
+- All  configuration files  **MUST** reside in the `local-env/` folder.
 
 # Alternatives:
 
