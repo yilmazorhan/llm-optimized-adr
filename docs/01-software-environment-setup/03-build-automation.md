@@ -32,7 +32,7 @@ Maven Wrapper (mvnw) configuration **MUST** be present and functional before any
 - **MUST NOT** allow different Maven versions across team members
 - **MUST NOT** proceed with code generation without validated Maven Wrapper
 - **MUST NOT** exclude `.mvn/wrapper/maven-wrapper.jar` from version control — the JAR is a required component for the wrapper to function
-- All dependency versions **MUST** be defined in the `<properties>` section of the parent `pom.xml` and referenced using property placeholders (e.g., `<version>${clickhouse.version}</version>`). **MUST NOT** hardcode version numbers directly in `<dependency>` or `<plugin>` declarations outside `<dependencyManagement>` or `<pluginManagement>`. This ensures a single source of truth for all versions, prevents version drift across modules, and simplifies dependency upgrades.
+- All dependency versions **MUST** be defined in the `<properties>` section of the parent `pom.xml` and referenced using property placeholders (e.g., `<version>${archunit.version}</version>`). **MUST NOT** hardcode version numbers directly in `<dependency>` or `<plugin>` declarations outside `<dependencyManagement>` or `<pluginManagement>`. This ensures a single source of truth for all versions, prevents version drift across modules, and simplifies dependency upgrades.
 
 # Alternatives:
 
@@ -104,7 +104,6 @@ Maven's declarative `pom.xml` uses XML configuration only (https://maven.apache.
 
          <!-- Dependency versions (single source of truth) -->
          <quarkus.platform.version>3.32.2</quarkus.platform.version>
-         <clickhouse.version>0.6.3</clickhouse.version>
          <archunit.version>1.4.1</archunit.version>
          <!-- ... all other dependency versions ... -->
      </properties>
@@ -112,9 +111,9 @@ Maven's declarative `pom.xml` uses XML configuration only (https://maven.apache.
    - All `<dependency>` and `<plugin>` version references **MUST** use property placeholders:
      ```xml
      <dependency>
-         <groupId>com.clickhouse</groupId>
-         <artifactId>clickhouse-jdbc</artifactId>
-         <version>${clickhouse.version}</version>
+         <groupId>com.tngtech.archunit</groupId>
+         <artifactId>archunit-junit5-api</artifactId>
+         <version>${archunit.version}</version>
      </dependency>
      ```
    - **MUST NOT** hardcode version literals directly in dependency or plugin declarations.

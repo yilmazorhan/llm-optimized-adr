@@ -37,11 +37,11 @@ Use Quarkus framework version 3.32.2 as the standardized application framework f
 
 1. **Spring Boot 3.x with Native (GraalVM)**: Spring Boot 3.3 native images report 2–5 second startup and 150–200 MB RSS memory (https://spring.io/blog/2023/09/09/all-together-now-spring-boot-3-2-graalvm-native-images-java-21-and-virtual). Spring Boot's reactive stack (WebFlux) uses Project Reactor, while Quarkus uses Mutiny — Reactor does not integrate natively with Quarkus CDI and build-time optimizations. Rejected because startup and memory exceed the <2s / ≤128MB constraints defined above.
 
-2. **Micronaut 4.x**: Micronaut 4 reports 1–2 second startup and 100–150 MB memory in JVM mode (https://micronaut.io/2023/07/14/micronaut-framework-4-0-0-released/). Micronaut has 12 listed database extensions versus Quarkus's 30+ (https://quarkus.io/extensions/). There is no official Micronaut ClickHouse extension, while Quarkus supports ClickHouse client integration. Rejected because it lacks ClickHouse support required by ADR-13 and has fewer extensions for the project's observability stack (OpenTelemetry, Prometheus, health checks).
+2. **Micronaut 4.x**: Micronaut 4 reports 1–2 second startup and 100–150 MB memory in JVM mode (https://micronaut.io/2023/07/14/micronaut-framework-4-0-0-released/). Micronaut has 12 listed database extensions versus Quarkus’s 30+ (https://quarkus.io/extensions/). Rejected because it has fewer extensions for the project’s observability stack (OpenTelemetry, Prometheus, health checks).
 
 # Rationale:
 
-Quarkus 3.32.2 documentation reports sub-second startup in JVM mode and ~70 MB RSS for a REST+CDI application (https://quarkus.io/guides/performance-measure). GraalVM native compilation reduces startup to ~50 ms and memory to ~30 MB per the same benchmarks. Built-in Dev Services auto-provision containers for detected extensions with zero configuration (https://quarkus.io/guides/dev-services), reducing onboarding time. Quarkus uses build-time dependency injection via ArC, eliminating runtime reflection overhead documented at https://quarkus.io/guides/cdi-reference. RESTEasy Reactive (`quarkus-rest`) and Mutiny are co-designed for Quarkus's event-loop architecture, providing non-blocking I/O without requiring a separate reactive framework. The Quarkus extension ecosystem includes ClickHouse client support required by ADR-13, and all observability extensions (OpenTelemetry, Micrometer/Prometheus, SmallRye Health) required by ADR-20/21/22.
+Quarkus 3.32.2 documentation reports sub-second startup in JVM mode and ~70 MB RSS for a REST+CDI application (https://quarkus.io/guides/performance-measure). GraalVM native compilation reduces startup to ~50 ms and memory to ~30 MB per the same benchmarks. Built-in Dev Services auto-provision containers for detected extensions with zero configuration (https://quarkus.io/guides/dev-services), reducing onboarding time. Quarkus uses build-time dependency injection via ArC, eliminating runtime reflection overhead documented at https://quarkus.io/guides/cdi-reference. RESTEasy Reactive (`quarkus-rest`) and Mutiny are co-designed for Quarkus’s event-loop architecture, providing non-blocking I/O without requiring a separate reactive framework. The Quarkus extension ecosystem includes all observability extensions (OpenTelemetry, Micrometer/Prometheus, SmallRye Health) required by ADR-20/21/22.
 
 
 # Implementation Guidelines:
@@ -232,7 +232,7 @@ Quarkus 3.32.2 documentation reports sub-second startup in JVM mode and ~70 MB R
 **Advanced Considerations**:
 - **RECOMMENDED** Maven multi-module architecture with shared Quarkus configuration (ADR-09).
 - **RECOMMENDED** Security extensions (JWT, RBAC) for production environments (ADR-18).
-- **MUST** Reference ADR-02 (Java Runtime), ADR-05 (Containerization), ADR-09 (Multi-Module), ADR-13 (ClickHouse), ADR-20 (Observability).
+- **MUST** Reference ADR-02 (Java Runtime), ADR-05 (Containerization), ADR-09 (Multi-Module), ADR-20 (Observability).
 - See Quarkus documentation: https://quarkus.io/guides/
 - See Quarkus extensions catalog: https://quarkus.io/extensions/
 

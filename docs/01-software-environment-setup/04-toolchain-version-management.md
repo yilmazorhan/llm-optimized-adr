@@ -200,15 +200,15 @@ echo "📦 Packaging the application..."
 ./mvnw package -DskipTests
 
 echo "🐳 Starting infrastructure with Docker Compose..."
-docker compose up -d clickhouse
+docker compose up -d jaeger prometheus grafana
 
-echo "⏳ Waiting for ClickHouse to be ready..."
-until docker compose exec clickhouse clickhouse-client --query "SELECT 1" > /dev/null 2>&1; do
-  echo "ClickHouse is not ready yet. Waiting..."
+echo "⏳ Waiting for infrastructure to be ready..."
+until curl -sf http://localhost:16686 > /dev/null 2>&1; do
+  echo "Infrastructure is not ready yet. Waiting..."
   sleep 2
 done
 
-echo "✅ ClickHouse is ready!"
+echo "✅ Infrastructure is ready!"
 
 echo "🎯 Starting Quarkus in development mode..."
 echo "📝 Note: The application will be available at http://localhost:8080"

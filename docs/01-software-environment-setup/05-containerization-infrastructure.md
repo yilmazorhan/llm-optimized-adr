@@ -41,7 +41,7 @@ Docker **MUST** be the containerization platform for all development and deploym
 
 # Rationale:
 
-Docker is the container runtime targeted by Quarkus Dev Services and Testcontainers (https://www.testcontainers.org/supported_docker_environment/), making it a prerequisite for the testing strategy in ADR-28. Docker Compose provides declarative, file-based service definitions that can be version-controlled and shared across the team, ensuring all developers run identical infrastructure. The Docker Engine 24.0+ requirement ensures BuildKit support for multi-stage builds and improved caching (https://docs.docker.com/build/buildkit/). Supporting both `docker compose` and `docker-compose` variants covers Docker Desktop users and Linux/CI environments where only the standalone binary is installed.
+Docker is the container runtime targeted by Quarkus Dev Services and Testcontainers (https://www.testcontainers.org/supported_docker_environment/), making it a prerequisite for the testing strategy. Docker Compose provides declarative, file-based service definitions that can be version-controlled and shared across the team, ensuring all developers run identical infrastructure. The Docker Engine 24.0+ requirement ensures BuildKit support for multi-stage builds and improved caching (https://docs.docker.com/build/buildkit/). Supporting both `docker compose` and `docker-compose` variants covers Docker Desktop users and Linux/CI environments where only the standalone binary is installed.
 
 # Implementation Guidelines:
 

@@ -47,7 +47,7 @@ Maven multi-module projects enforce compile-time boundaries: a module can only a
     <module>order-business</module>
 
     <!-- Infrastructure (Impl) -->
-    <module>order-persistence-clickhouse</module>
+    <module>order-persistence</module>
 
     <!-- API (HTTP) -->
     <module>order-web-api</module>

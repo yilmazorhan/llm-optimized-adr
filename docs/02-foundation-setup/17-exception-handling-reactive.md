@@ -149,7 +149,7 @@ public class ExternalServiceException extends InfrastructureException {
     }
 }
 
-// Audit Persistence Exceptions (ClickHouse)
+// Audit Persistence Exceptions
 public class AuditPersistenceException extends InfrastructureException {
     public AuditPersistenceException(String operation, UUID eventId, SQLException cause) {
         super("AUD-001", operation,

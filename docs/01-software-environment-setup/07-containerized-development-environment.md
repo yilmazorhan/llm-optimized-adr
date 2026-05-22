@@ -32,11 +32,11 @@ A graduated containerized development environment strategy **SHALL** be implemen
 
 1. **Vagrant + Shell Provisioning**: VM-based development environments using Vagrant with shell provisioners. Rejected because: Vagrant VMs require a full guest OS, consuming 1–2 GB RAM per VM versus 50–200 MB per Docker container (https://www.vagrantup.com/docs/providers). VM boot time is 30–60 seconds versus 1–5 seconds for containers. Vagrant does not integrate with Quarkus Dev Services or Testcontainers.
 
-2. **Local JVM + Embedded Services (H2, embedded Redis)**: Run all dependencies as embedded/in-memory services in the JVM. Rejected because: Embedded alternatives do not exist for ClickHouse (the project's primary database per ADR-13). Embedded services cannot replicate production network topology, port bindings, or container-level resource limits. Testcontainers documentation explicitly recommends real containers over embedded alternatives (https://www.testcontainers.org/#why-testcontainers).
+2. **Local JVM + Embedded Services (H2, embedded Redis)**: Run all dependencies as embedded/in-memory services in the JVM. Rejected because: Embedded services cannot replicate production network topology, port bindings, or container-level resource limits. Testcontainers documentation explicitly recommends real containers over embedded alternatives (https://www.testcontainers.org/#why-testcontainers).
 
 # Rationale:
 
-Quarkus Dev Services automatically provisions containers for detected extensions (e.g., ClickHouse) with zero configuration (https://quarkus.io/guides/dev-services). This provides a working environment from the first `./mvnw quarkus:dev` invocation. Docker Compose adds explicit control for services beyond Dev Services scope (Prometheus, Grafana, Jaeger). Testcontainers provides programmatic container lifecycle management during integration tests, ensuring each test run uses isolated, disposable infrastructure (https://www.testcontainers.org/). The graduated approach (Dev Services → Compose → Testcontainers) allows developers to start with minimal setup and add complexity only when needed.
+Quarkus Dev Services automatically provisions containers for detected extensions with zero configuration (https://quarkus.io/guides/dev-services). This provides a working environment from the first `./mvnw quarkus:dev` invocation. Docker Compose adds explicit control for services beyond Dev Services scope (Prometheus, Grafana, Jaeger). Testcontainers provides programmatic container lifecycle management during integration tests, ensuring each test run uses isolated, disposable infrastructure (https://www.testcontainers.org/). The graduated approach (Dev Services → Compose → Testcontainers) allows developers to start with minimal setup and add complexity only when needed.
 
 # Implementation Guidelines:
 
@@ -64,12 +64,12 @@ Quarkus Dev Services automatically provisions containers for detected extensions
    ```yaml
    # docker-compose.yml
    services:
-     clickhouse:
-       image: clickhouse/clickhouse-server:24.3-alpine
+     jaeger:
+       image: jaegertracing/all-in-one:1.58
        deploy:
          resources:
            limits:
-             memory: 2G
+             memory: 512M
    ```
 
 **Validation** (**SHALL** be performed):
@@ -121,7 +121,7 @@ curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job:
 - **RECOMMENDED** Add health checks with `healthcheck` directives to all service definitions.
 - **RECOMMENDED** Integrate Prometheus/Grafana for development metrics (ADR-20, ADR-22).
 - **RECOMMENDED** Use Jaeger for distributed tracing during development (ADR-21).
-- **MUST** Reference ADR-05 (Containerization Infrastructure), ADR-06 (Development Environment Automation), and ADR-28 (Testcontainers Integration).
+- **MUST** Reference ADR-05 (Containerization Infrastructure) and ADR-06 (Development Environment Automation).
 - See Quarkus Dev Services: https://quarkus.io/guides/dev-services
 - See Testcontainers: https://www.testcontainers.org/
 - See Docker Compose profiles: https://docs.docker.com/compose/profiles/

@@ -77,10 +77,9 @@ Foundation tooling, runtime, containerization, and framework decisions.
 | [03](01-software-environment-setup/03-build-automation.md) | Build Automation | Maven 3.9.8, Maven Wrapper, dependency version properties |
 | [04](01-software-environment-setup/04-toolchain-version-management.md) | Toolchain Version Management | Exact version pinning, `setup.sh` validation script |
 | [05](01-software-environment-setup/05-containerization-infrastructure.md) | Containerization Infrastructure | Docker 24.0+, Docker Compose 2.24+ |
-| [06](01-software-environment-setup/06-development-environment-automation.md) | Development Environment Automation | Makefile, `setup.sh`, Docker Compose services (ClickHouse, Jaeger, Prometheus, Grafana) |
+| [06](01-software-environment-setup/06-development-environment-automation.md) | Development Environment Automation | Makefile, `setup.sh`, Docker Compose services (Jaeger, Prometheus, Grafana) |
 | [07](01-software-environment-setup/07-containerized-development-environment.md) | Containerized Development Environment | Graduated approach: Dev Services → Compose → Testcontainers, `host.docker.internal` |
 | [08](01-software-environment-setup/08-application-framework-quarkus.md) | Application Framework (Quarkus) | Quarkus 3.32.2, RESTEasy Reactive, Mutiny, BOM import |
-| [13a](01-software-environment-setup/13a-clickhouse-infrastructure-setup.md) | ClickHouse Infrastructure Setup | ClickHouse Docker Compose, JDBC 0.6.3, Tabix Web UI, application config |
 
 ### 02 — Foundation Setup
 
@@ -110,11 +109,9 @@ Coding standards, testing, data handling, API documentation, and generation temp
 | ADR | Title | Scope |
 |:----|:------|:------|
 | [12](03-software-development-rules/12-code-quality-standards.md) | Code Quality Standards | Google Java Style, Spotless, Checkstyle, PMD, SpotBugs/FindSecBugs |
-| [13b](03-software-development-rules/13b-clickhouse-coding-standards.md) | ClickHouse Coding Standards | Schema design, MergeTree engines, batch inserts, reactive Mutiny adapters, parameterized queries |
 | [14](03-software-development-rules/14-data-migration-strategy.md) | Data Migration Strategy | Flyway migrations, `V{version}__{description}.sql` naming, quarkus-flyway extension |
 | [24](03-software-development-rules/24-data-transfer-validation.md) | Data Transfer & Validation | DTO patterns, Bean Validation 3.0, Java records for responses, MessageKeys, custom validators |
 | [27](03-software-development-rules/27-api-documentation-localization.md) | API Documentation Localization | OpenAPI localization, internationalized API docs for non-English markets |
-| [28](03-software-development-rules/28-testcontainers-integration.md) | Testcontainers Integration | Integration testing with ClickHouse Testcontainers, `QuarkusTestResourceLifecycleManager` |
 | [29](03-software-development-rules/29-code-generation-templates.md) | Code Generation Templates | Implementation consistency templates for code generation |
 | [30](03-software-development-rules/30-business-requirement-format.md) | Business Requirement Format | BRD standard (`requirements/` directory, `BR-NNN-descriptive-name.md`), Gherkin scenarios, RFC 2119 rules, cross-cutting concerns checklist |
 
@@ -134,6 +131,10 @@ Business Requirement Documents are stored in `requirements/` per ADR-30.
 | BRD | Title |
 |:----|:------|
 | [BR-000](../requirements/BR-000-platform-operational-foundation.md) | Platform Operational Foundation |
+| [BR-001](../requirements/BR-001-hsqldb-test-infrastructure.md) | HSQLDB Test Infrastructure |
+| [BR-002](../requirements/BR-002-dashboard-definitions.md) | Git-Backed Dashboard Definitions |
+| [BR-003](../requirements/BR-003-rest-api-query-endpoint.md) | REST API Query Endpoint |
+| [BR-004](../requirements/BR-004-database-execution-logic.md) | Database Execution Logic |
 
 ---
 

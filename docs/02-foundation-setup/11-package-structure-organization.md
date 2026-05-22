@@ -91,7 +91,7 @@ All library modules (non-application modules) **MUST** include the `jandex-maven
 ## Naming Conventions:
 - **Entities**: `User.java`, `Order.java` (singular, PascalCase)
 - **Ports**: `UserRepositoryPort.java`, `NotificationPort.java` (interface with "Port" suffix)
-- **Adapters**: `ClickHouseUserRepositoryAdapter.java`, `EmailNotificationAdapter.java` (implementation with "Adapter" suffix)
+- **Adapters**: `JdbcUserRepositoryAdapter.java`, `EmailNotificationAdapter.java` (implementation with "Adapter" suffix)
 - **Services**: `UserService.java`, `UserApplicationService.java` (context + "Service")
 - **Controllers**: `UserController.java`, `OrderController.java` (entity + "Controller")
 - **DTOs**: `CreateUserRequest.java`, `UserResponse.java` (operation + "Request"/"Response")

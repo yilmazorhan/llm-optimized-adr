@@ -8,7 +8,6 @@ Implement standardized `application.properties` template consolidating all archi
 
 **Required Coverage**:
 - **Security Controls**: OWASP security headers, authentication, rate limiting, audit logging
-- **Database Connectivity**: ClickHouse with proper connection management for analytical workloads
 - **Observability Stack**: OpenTelemetry tracing, Micrometer metrics, structured logging
 - **Internationalization**: Multi-locale configuration with proper fallback mechanisms
 - **Environment Management**: Dev/test/prod profile configurations with secure defaults
@@ -29,11 +28,11 @@ quarkus.locales=en,es,fr,de
 quarkus.default-locale=en
 
 # Database Configuration
-clickhouse.host=${CLICKHOUSE_HOST:localhost}
-clickhouse.port=${CLICKHOUSE_PORT:8123}
-clickhouse.database=${CLICKHOUSE_DB:demo}
-clickhouse.username=${CLICKHOUSE_USER:demo}
-clickhouse.password=${CLICKHOUSE_PASSWORD:demo}
+# datasource.host=${DB_HOST:localhost}
+# datasource.port=${DB_PORT:5432}
+# datasource.database=${DB_NAME:demo}
+# datasource.username=${DB_USER:demo}
+# datasource.password=${DB_PASSWORD:demo}
 
 # HTTP Configuration
 quarkus.http.port=${HTTP_PORT:8080}
@@ -86,7 +85,7 @@ app.security.rate-limit.window-duration=${RATE_LIMIT_WINDOW:PT1M}
 %dev.quarkus.log.category."com.copilot.quarkus".level=DEBUG
 %dev.quarkus.hibernate-orm.database.generation=drop-and-create
 
-# Test Profile (uses Testcontainers — see ADR-28)
+# Test Profile (uses Testcontainers)
 %test.quarkus.hibernate-orm.database.generation=none
 
 # Production Profile
@@ -100,13 +99,6 @@ app.security.rate-limit.window-duration=${RATE_LIMIT_WINDOW:PT1M}
 
 ### Required for Production:
 ```bash
-# Database
-CLICKHOUSE_HOST=prod-clickhouse
-CLICKHOUSE_PORT=8123
-CLICKHOUSE_DB=production_db
-CLICKHOUSE_USER=production_user
-CLICKHOUSE_PASSWORD=secure_password
-
 # Security
 JWT_ISSUER=https://your-domain.com
 ADMIN_USER=admin
@@ -169,13 +161,6 @@ Quarkus MicroProfile Config resolves properties in a defined ordinal hierarchy: 
 
 ### Required for Production:
 ```bash
-# Database Configuration
-export CLICKHOUSE_HOST=prod-clickhouse
-export CLICKHOUSE_PORT=8123
-export CLICKHOUSE_DB=production_db
-export CLICKHOUSE_USER=production_user
-export CLICKHOUSE_PASSWORD=secure_password_here
-
 # Security Configuration  
 export JWT_ISSUER=https://your-production-domain.com
 export ADMIN_USER=production_admin

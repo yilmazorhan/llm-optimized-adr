@@ -30,7 +30,7 @@ Synchronous audit logging blocks the calling thread until the log entry is writt
 
 ### 2. Database-Only Auditing (Direct Table Insert)
 
-Writing audit records directly to a database couples audit write performance to database throughput. According to ClickHouse performance benchmarks (https://clickhouse.com/benchmark/dbms/), analytical databases optimize for batch inserts rather than single-row writes. Direct INSERT per request under load creates lock contention and connection pool exhaustion, as documented in the HikariCP wiki (https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing). This approach also violates the isolation requirement since audit writes share the same connection pool as business operations.
+Writing audit records directly to a database couples audit write performance to database throughput. Analytical databases optimize for batch inserts rather than single-row writes. Direct INSERT per request under load creates lock contention and connection pool exhaustion, as documented in the HikariCP wiki (https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing). This approach also violates the isolation requirement since audit writes share the same connection pool as business operations.
 
 # Rationale:
 

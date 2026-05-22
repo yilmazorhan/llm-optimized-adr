@@ -214,20 +214,20 @@ import jakarta.inject.Inject;
  * Database adapter with manual span creation for fine-grained tracing.
  */
 @ApplicationScoped
-public class ClickHouseUserAdapter implements UserRepositoryPort {
+public class JdbcUserRepositoryAdapter implements UserRepositoryPort {
 
     @Inject
     Tracer tracer;
 
     @Inject
-    ClickHouseClient clickHouseClient;
+    DataSource dataSource;
 
     @Override
     public Uni<User> findById(Long id) {
         // Create a new span manually
-        SpanBuilder spanBuilder = tracer.spanBuilder("ClickHouse.findUserById")
+        SpanBuilder spanBuilder = tracer.spanBuilder("Database.findUserById")
             .setSpanKind(SpanKind.CLIENT)
-            .setAttribute("db.system", "clickhouse")
+            .setAttribute("db.system", "postgresql")
             .setAttribute("db.operation", "SELECT")
             .setAttribute("db.table", "users")
             .setAttribute("user.id", id);
@@ -257,7 +257,7 @@ public class ClickHouseUserAdapter implements UserRepositoryPort {
     private Uni<User> executeQuery(Long id) {
         String sql = "SELECT * FROM users WHERE id = ?";
         // Database query implementation
-        return clickHouseClient.query(sql, id);
+        return dataSource.query(sql, id);
     }
 }
 ```

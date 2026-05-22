@@ -7,7 +7,7 @@ New developers joining the project face manual, error-prone setup of build tools
 Use Maven Wrapper (`mvnw`) and Docker Compose for automated, reproducible development environment setup.
 
 - Maven Wrapper **MUST** be committed at project root to pin the Maven version and eliminate local Maven installation requirements.
-- Docker Compose **MUST** manage all infrastructure services: ClickHouse, Jaeger, Prometheus, Grafana.
+- Docker Compose **MUST** manage all infrastructure services: Jaeger, Prometheus, Grafana.
 - A `Makefile` **MUST** provide standardized commands for build, test, run, and infrastructure lifecycle.
 - A `setup.sh` script **MUST** validate prerequisites and bootstrap the environment in a single step.
 - Multi-module Maven structure **MUST** use dependency management via a parent POM.
@@ -17,7 +17,7 @@ Use Maven Wrapper (`mvnw`) and Docker Compose for automated, reproducible develo
 | Role | Person | Competencies |
 |------|--------|-------------|
 | **Responsible** | DevOps / Platform Engineer | Shell scripting for cross-platform setup automation (macOS/Linux), Makefile design for build/test/run targets, Docker Compose service orchestration and health checks, Maven Wrapper integration, developer onboarding workflow optimization |
-| **Approver** | Tech Lead / Software Architect | Development workflow standardization decisions, prerequisite toolchain trade-offs, multi-module Maven structure governance, infrastructure service selection (ClickHouse, Jaeger, Prometheus, Grafana) |
+| **Approver** | Tech Lead / Software Architect | Development workflow standardization decisions, prerequisite toolchain trade-offs, multi-module Maven structure governance, infrastructure service selection (Jaeger, Prometheus, Grafana) |
 
 # Constraints:
 
@@ -104,7 +104,7 @@ cd copilot-quarkus
 
 **2. Start Infrastructure:**
 ```bash
-make start  # Start ClickHouse, Jaeger, Prometheus, Grafana (auto-detects Docker Compose variant)
+make start  # Start Jaeger, Prometheus, Grafana (auto-detects Docker Compose variant)
 ```
 
 **3. Run Application:**
@@ -278,8 +278,6 @@ verify: ## Run full verification with quality checks
 ## Docker Compose Services:
 ```yaml
 services:
-  clickhouse:      # Database - ClickHouse 24.x
-    ports: 8123:8123, 9000:9000
   jaeger:         # Distributed Tracing - Jaeger all-in-one
     ports: 16686:16686, 4317:4317, 4318:4318
   prometheus:     # Metrics Collection - Prometheus 2.54.1
@@ -341,7 +339,7 @@ make demo              # Run rate limiting demo
 | Maven Wrapper functional | `./mvnw --version` | Prints Maven version, exit code 0 |
 | Full build succeeds | `make build` | `./mvnw clean install` completes with exit code 0 |
 | Dev mode starts | `make dev` | Application starts with `-am` flag on port 8080 |
-| Infrastructure services run | `make status` | ClickHouse, Jaeger, Prometheus, Grafana all running |
+| Infrastructure services run | `make status` | Jaeger, Prometheus, Grafana all running |
 | Setup script works | `./setup.sh` | Validates prerequisites, builds, starts services, exit code 0 |
 
 **Validation Script:**

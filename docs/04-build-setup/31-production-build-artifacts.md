@@ -65,7 +65,7 @@ Before generating production artifacts, the following services **MUST** be runni
 
 **Important**: The `make openapi` and `make dashboards` targets require running services to export live configurations. For CI/CD pipelines, use the following workflow:
 
-1. Start infrastructure services: `docker-compose up -d clickhouse jaeger prometheus grafana`
+1. Start infrastructure services: `docker-compose up -d jaeger prometheus grafana`
 2. Start the application: `./mvnw quarkus:dev -Dquarkus.http.port=8080` (background)
 3. Wait for health check: `curl -f http://localhost:8080/health`
 4. Generate artifacts: `make artifacts`
@@ -167,8 +167,8 @@ COPY scripts/ /flyway/scripts/
 # Make scripts executable
 RUN chmod +x /flyway/scripts/*.sh
 
-# Environment variables for ClickHouse connection
-ENV FLYWAY_URL=jdbc:clickhouse://localhost:8123/demo
+# Environment variables for database connection
+ENV FLYWAY_URL=jdbc:postgresql://localhost:5432/demo
 ENV FLYWAY_USER=demo
 ENV FLYWAY_PASSWORD=demo
 ENV FLYWAY_SCHEMAS=demo
@@ -230,10 +230,9 @@ flyway info
 echo "✅ Rollback to ${TARGET_VERSION} completed"
 ```
 
-**ClickHouse-Specific Flyway Configuration** (`conf/flyway.conf`):
+**Flyway Configuration** (`conf/flyway.conf`):
 ```properties
-# Flyway Configuration for ClickHouse
-flyway.driver=com.clickhouse.jdbc.ClickHouseDriver
+# Flyway Configuration
 flyway.url=${FLYWAY_URL}
 flyway.user=${FLYWAY_USER}
 flyway.password=${FLYWAY_PASSWORD}
@@ -245,51 +244,44 @@ flyway.baselineOnMigrate=true
 flyway.validateOnMigrate=true
 flyway.outOfOrder=false
 flyway.cleanDisabled=true
-
-# ClickHouse-specific settings
-flyway.placeholders.clickhouse_cluster=default
-flyway.placeholders.replication_factor=1
 ```
 
-**Sample ClickHouse Migration** (`sql/V1.0.0__initial_schema.sql`):
+**Sample Migration** (`sql/V1.0.0__initial_schema.sql`):
 ```sql
 -- V1.0.0: Initial schema for audit events
--- ClickHouse MergeTree engine optimized for time-series analytical queries
 
 CREATE TABLE IF NOT EXISTS audit_events (
-    event_id UUID DEFAULT generateUUIDv4(),
-    timestamp DateTime64(3) DEFAULT now64(3),
+    event_id UUID DEFAULT gen_random_uuid(),
+    timestamp TIMESTAMPTZ(3) DEFAULT now(),
     
     -- Service context
-    service_name LowCardinality(String),
-    service_version LowCardinality(String),
+    service_name VARCHAR(100) NOT NULL,
+    service_version VARCHAR(50) NOT NULL,
     
     -- Event classification
-    event_name LowCardinality(String),
-    event_category LowCardinality(String),
-    outcome LowCardinality(Enum8('SUCCESS' = 1, 'FAILURE' = 2)),
+    event_name VARCHAR(100) NOT NULL,
+    event_category VARCHAR(50) NOT NULL,
+    outcome VARCHAR(10) NOT NULL CHECK (outcome IN ('SUCCESS', 'FAILURE')),
     
     -- Correlation
-    correlation_id String,
-    trace_id String,
-    span_id String,
+    correlation_id VARCHAR(255),
+    trace_id VARCHAR(255),
+    span_id VARCHAR(255),
     
     -- Actor information
-    actor_type LowCardinality(Enum8('USER' = 1, 'SYSTEM' = 2, 'API_KEY' = 3)),
-    actor_id String,
+    actor_type VARCHAR(20) NOT NULL CHECK (actor_type IN ('USER', 'SYSTEM', 'API_KEY')),
+    actor_id VARCHAR(255),
     
     -- Resource information
-    resource_type LowCardinality(String),
-    resource_id String,
+    resource_type VARCHAR(100),
+    resource_id VARCHAR(255),
     
     -- Event data
-    event_data String CODEC(ZSTD(3))
-)
-ENGINE = MergeTree()
-PARTITION BY toYYYYMM(timestamp)
-ORDER BY (service_name, event_name, timestamp)
-TTL timestamp + INTERVAL 90 DAY
-SETTINGS index_granularity = 8192;
+    event_data JSONB
+);
+
+CREATE INDEX idx_audit_events_timestamp ON audit_events (timestamp);
+CREATE INDEX idx_audit_events_service ON audit_events (service_name, event_name);
 ```
 
 ## 3. Grafana Dashboard JSON Export
@@ -791,7 +783,7 @@ docker images | grep copilot-quarkus
 
 # Test migration container
 docker run --rm copilot-quarkus-migrations:latest \
-  -url=jdbc:clickhouse://host:8123/demo \
+  -url=jdbc:postgresql://host:5432/demo \
   -user=demo -password=demo \
   info
 

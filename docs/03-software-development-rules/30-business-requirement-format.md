@@ -83,7 +83,7 @@ Scenario: [Descriptive scenario name]
 Source code and test files **MUST** reference the governing BRD identifier in comments or annotations:
 
 ```java
-// Implements BR-001-02: Audit events persisted to ClickHouse
+// Implements BR-001-02: Audit events persisted to database
 ```
 
 ```java
