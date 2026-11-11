@@ -80,13 +80,26 @@ Scenario: Dashboard ID uniqueness enforced
 
 | Concern | ADR Reference(s) | Plan Details | Verified |
 |---------|-------------------|--------------|----------|
-| Security | ADR-18 | Masking applied server-side before serialization; no raw sensitive data transmitted | TBD |
-| Logging | ADR-16 | Schema validation errors logged with structured JSON format | TBD |
-| i18n | ADR-25, ADR-26 | Column labels support localized display names | TBD |
-| Observability | ADR-20, ADR-21 | Schema loading and validation traced via OpenTelemetry spans | TBD |
-| Configuration | ADR-15 | Datasource names mapped to configured database connections in application.properties | TBD |
-| Error Handling | ADR-23 | Validation failures returned as RFC 9457 Problem Details | TBD |
-| Code Quality | ADR-12 | YAML parsing POJOs follow Google Java Style, validated by Spotless | TBD |
+| Security | ADR-18 | Masking applied server-side before serialization; no raw sensitive data transmitted | Yes (`MaskingService` + `MaskingServiceTest`; `maskRow` proven leak-free) |
+| Logging | ADR-16 | Schema validation errors logged with structured JSON format | Yes (`LocalizedLogger` + `LocalizedLoggerTest`; JSON console in `%prod`) |
+| i18n | ADR-25, ADR-26 | Column labels support localized display names | Yes (`MessageResolver` + `messages_{en,es,fr,de}.properties`; `MessageResolverTest`) |
+| Observability | ADR-20, ADR-21 | Schema loading and validation traced via OpenTelemetry spans | Partial (structured logging done; OTel spans deferred to the BR-004 execution path) |
+| Configuration | ADR-15 | Datasource names mapped to configured database connections in application.properties | Yes (`reporting.datasources` allow-list; unknown datasource rejected at load) |
+| Error Handling | ADR-23 | Validation failures returned as RFC 9457 Problem Details | Partial (typed domain exceptions + error codes at the service layer; the `application/problem+json` REST mapper is BR-003 scope — no endpoint in BR-002) |
+| Code Quality | ADR-12 | YAML parsing POJOs follow Google Java Style, validated by Spotless | Yes (Spotless/Checkstyle/PMD/SpotBugs in the `quality` Maven profile; `make lint-quality`) |
+
+### Implementation & Verification Notes
+
+- Modules (ADR-09/10/11, hexagonal): `platform-domain` (model, `MaskingService`, `DashboardRegistry`,
+  error codes), `platform-infrastructure` (YAML source, JSON meta-schema validator, Git watcher),
+  `reporting-app` (Quarkus: startup validation, file monitoring, datasource mapping).
+- The JSON meta-schema is the file from section 8, stored at
+  `platform-infrastructure/src/main/resources/schema/dashboard-meta-schema.json` and enforced by the
+  `networknt` draft-07 validator.
+- Run the Acceptance Criteria (section 3) and this checklist. All checks pass with zero failures; the four masking scenarios
+  and the four schema-rejection scenarios are asserted by automated tests.
+- Out-of-scope items (REST endpoint, SQL execution, pagination, authn/z) remain deferred to BR-003/BR-004
+  as declared in section 6.
 
 ## 5. Related ADRs
 

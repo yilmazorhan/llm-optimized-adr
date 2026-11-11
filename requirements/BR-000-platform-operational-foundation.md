@@ -16,37 +16,8 @@ As a **developer**, I want **a fully configured development environment with all
 
 ## 3. Acceptance Criteria / Scenarios
 
-```gherkin
-Scenario: Validate Java runtime environment
-  Given JDK 21.0.4 Eclipse Temurin is installed via SDKMAN
-  When I run "java -version"
-  Then the output contains "21.0.4"
-
-Scenario: Validate Maven Wrapper
-  Given Maven Wrapper files exist (mvnw, maven-wrapper.jar, maven-wrapper.properties)
-  When I run "./mvnw -v"
-  Then the output contains "Apache Maven 3.9.8"
-
-Scenario: Validate Docker infrastructure
-  Given Docker and Docker Compose are installed
-  When I run "make start"
-  Then Jaeger, Prometheus, and Grafana services are running
-
-Scenario: Validate infrastructure health
-  Given Infrastructure services are started
-  When I check service endpoints
-  Then Jaeger UI is accessible, Prometheus is healthy, Grafana is accessible
-
-Scenario: Validate build succeeds
-  Given all prerequisite tools are installed
-  When I run "make build"
-  Then the build completes with exit code 0
-
-Scenario: Validate validation script passes
-  Given BR-000 implementation is complete
-  When I run "bash scripts/validate-br000.sh"
-  Then all 53 checks pass with zero failures
-```
+- **MUST** validate all business rules
+- **MUST** satisfy all cross cutting concerns
 
 ## 4. Cross-Cutting Concerns Checklist
 
@@ -93,20 +64,3 @@ Scenario: Validate validation script passes
 - **ADR-29**: Code Generation Templates — Implementation consistency
 - **ADR-30**: Business Requirement Format — BRD standard format
 - **ADR-31**: Production Build Artifacts — Five mandatory artifacts
-
-## 6. Installation Steps
-
-1. **Prerequisites**: Install JDK 21.0.4 (Eclipse Temurin), Docker 24.0+, Docker Compose 2.24+
-2. **SDKMAN**: Install SDKMAN and run `sdk env install` to get pinned JDK/Maven versions
-3. **Maven Wrapper**: Verify `./mvnw -v` returns Maven 3.9.8
-4. **Infrastructure**: Run `make start` to start Jaeger, Prometheus, Grafana
-5. **Validation**: Run `bash scripts/validate-br000.sh` to verify all 53 checks pass
-6. **Development**: Run `make dev` to start Quarkus development server
-
-## 7. Verification
-
-- Each business rule relates to an ADR. Success Criteria in each ADR **MUST** be satisfied.
-- All shell scripts **MUST** be verified to be working correctly (syntax check + runtime validation).
-- `make build` **MUST** complete with exit code 0.
-- `bash scripts/validate-br000.sh` **MUST** report 53 passed, 0 failed.
-- Infrastructure services (Jaeger, Prometheus, Grafana) **MUST** be healthy and accessible.

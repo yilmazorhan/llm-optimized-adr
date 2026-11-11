@@ -4,22 +4,24 @@ Unstructured business requirements cause ambiguity, leading to incorrect impleme
 
 # Decision:
 
-All Business Requirement Documents **MUST** be stored as versioned Markdown files in the `brd/` directory, following the `BR-NNN-descriptive-name.md` naming convention. Each BRD **MUST** contain the following numbered sections:
+All Business Requirement Documents **MUST** be stored as versioned Markdown files in the `brd/BR-NNN` directory, following the `BR-NNN-descriptive-name.md` naming convention. Each BRD **MUST** contain the following numbered sections:
 
 1. **Summary** — A high-level overview including a user story in "As a [role], I want [goal], So that [benefit]" format and a prose description of the feature scope.
 2. **Business Rules** — An itemized list of rules using the BRD identifier prefix (e.g., `BR-001-01`, `BR-001-02`), each using RFC 2119 requirement levels (SHALL, MUST, SHOULD).
-3. **Acceptance Criteria / Scenarios** — Detailed scenarios in Gherkin format (`Given`/`When`/`Then`) to make requirements concrete and directly translatable to automated tests.
+3. **Acceptance Criteria / Scenarios** — Detailed scenarios to make requirements concrete and directly translatable to automated tests.
 4. **Cross-Cutting Concerns Checklist** — A table mapping each non-functional concern (security, logging, i18n, observability, etc.) to its governing ADR reference, planned implementation detail, and verification status.
 5. **Related ADRs** — Explicit links to all architectural decisions that govern the feature implementation.
 
 Optional sections **MAY** include: Scope (In-Scope / Out-of-Scope), Objectives, Non-Functional Requirements, Implementation Phases, REST API Endpoints, and Database Schema.
+
+When a business requirement satisfied, there **MUST** be an evidence located in `brd/BR-NNN/logs` folder. Such as unit test reports, application logs related with this business requirement, implementation plan, important decisions.
 
 # Constraints:
 
 - BRD files **MUST** reside in the `brd/` directory at the repository root
 - BRD filenames **MUST** follow `BR-NNN-descriptive-name.md` where NNN is a zero-padded sequence number
 - Business rules **MUST** use RFC 2119 requirement levels (MUST, SHALL, SHOULD, MAY)
-- Acceptance Criteria **MUST** use Gherkin syntax (`Given`/`When`/`Then`)
+- Acceptance Criteria **MUST** be solid clear
 - Cross-Cutting Concerns Checklist **MUST** reference governing ADRs by number
 - BRD identifiers **MUST** be referenced in corresponding source code and test files for traceability
 
@@ -52,12 +54,7 @@ Each new BRD **MUST** begin from the following structure:
 - **BR-NNN-02**: [Rule using RFC 2119 levels]
 
 ## 3. Acceptance Criteria / Scenarios
-\```gherkin
-Scenario: [Descriptive scenario name]
-  Given [precondition]
-  When [action]
-  Then [expected outcome]
-\```
+- Validate Docker infrastructure, check ports, check uptime etc.
 
 ## 4. Cross-Cutting Concerns Checklist
 | Concern | ADR Reference(s) | Plan Details | Verified |
