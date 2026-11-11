@@ -14,6 +14,13 @@ Implement standardized package structure following hexagonal architecture with d
 - Architectural boundaries **MUST** respect hexagonal dependency direction (inward only: infrastructure → application → domain)
 - ArchUnit automated testing **MUST** prevent boundary violations at build time
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Package structure design (domain/application/infrastructure layers), bounded context organization, naming convention enforcement (`*Port`/`*Adapter`/`*Service` suffixes), Jandex indexing for multi-module CDI discovery, ArchUnit package dependency rules |
+| **Approver** | Tech Lead / Software Architect | Packaging strategy trade-offs (layer-based vs. feature-based), bounded context decomposition decisions, cross-context access governance (port interfaces only), code generation placement conventions |
+
 # Constraints:
 
 - Package dependencies **MUST** respect hexagonal architecture rules: infrastructure may depend on application and domain; application may depend on domain; domain **MUST NOT** depend on application or infrastructure.

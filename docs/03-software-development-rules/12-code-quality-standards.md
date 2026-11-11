@@ -13,6 +13,13 @@ Adopt Google Java Style Guide with Quarkus-specific modifications, enforced thro
 - All quality plugins **MUST** run automatically during the build lifecycle and **MUST** fail the build on any violation.
 - Tests **MUST NOT** be skipped in standard `build` and `verify` commands.
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Spotless/Checkstyle/PMD/SpotBugs Maven plugin configuration, Google Java Style compliance, custom PMD ruleset tuning (complexity thresholds), FindSecBugs security analysis, build lifecycle phase binding (`validate`/`verify`) |
+| **Approver** | Tech Lead / Software Architect | Style guide selection trade-offs (Google vs. Oracle conventions), quality gate policies (build-failing thresholds), complexity budget decisions (cyclomatic/cognitive limits), static analysis tool governance |
+
 # Constraints:
 
 - All code patterns **MUST** support GraalVM native image compilation.

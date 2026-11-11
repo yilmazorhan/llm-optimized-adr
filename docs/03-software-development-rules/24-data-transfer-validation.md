@@ -13,6 +13,13 @@ Implement standardized DTO patterns with comprehensive Bean Validation 3.0 integ
 - **Validation Integration**: Bean Validation 3.0 with internationalized messages
 - **Message Key Management**: Centralized message key constants for validation and API documentation
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Request/Response DTO patterns (immutable classes, Java records), Bean Validation 3.0 annotation configuration (`@NotBlank`, `@Size`, `@Email`, `@Pattern`), custom `Validator` implementations, internationalized validation message keys, null-safe partial update handling, `@RegisterForReflection` for native serialization |
+| **Approver** | Tech Lead / Software Architect | API contract stability governance (camelCase property names, backward compatibility), DTO boundary policy (no domain entity exposure, no internal details in responses), validation coverage standards review |
+
 # Constraints:
 
 - All validation annotations **MUST** be compatible with the Bean Validation 3.0 specification (Jakarta Validation).

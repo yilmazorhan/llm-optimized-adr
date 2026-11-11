@@ -15,6 +15,13 @@ A structured, asynchronous audit logging mechanism **MUST** be implemented. All 
 - **Data Collection**: An "Audit Context" **MUST** collect relevant information throughout a request's lifecycle.
 - **Immutability**: Log entries **MUST** be immutable once written.
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Asynchronous audit logging on Mutiny worker pools, dedicated audit logger configuration (file handler isolation), JSON audit schema implementation, Javers object diff generation for UPDATE events, PII masking, AuditContext request lifecycle collection, AuditLog aggregate persistence |
+| **Approver** | Tech Lead / Software Architect | Audit trail architecture decisions (async queue vs. synchronous vs. database-only), regulatory compliance review (SOC 2, HIPAA, GDPR), audit log retention and SIEM forwarding policy, guaranteed-delivery and shutdown safety requirements |
+
 # Constraints:
 
 - Audit log events **MUST** add less than 5ms of latency to any request.

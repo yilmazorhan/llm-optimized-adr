@@ -14,6 +14,13 @@ Implement complete string externalization for all hardcoded text content. All us
 - **Resource Bundle Extension**: Extended existing i18n infrastructure with new message categories
 - **Configurable Default Locale**: Application uses `app.i18n.default-locale` property (configurable at deployment) with fallback to `Locale.getDefault()`
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | `MessageKeys` constants class maintenance, `LocalizedLogger` wrapper implementation over SLF4J, resource bundles for all supported locales (`en`, `es`, `fr`, `de`), Bean Validation message interpolator integration, configurable default locale (`app.i18n.default-locale` / `APP_I18N_DEFAULT_LOCALE`), dot-notation key conventions |
+| **Approver** | Tech Lead / Software Architect | Externalization scope policy (logging, validation, API documentation, entity strings), supported locale governance, message key taxonomy review, translation workflow and tooling decisions (Crowdin, Transifex, Lokalise) |
+
 # Constraints:
 
 - All message keys **MUST** follow dot-notation naming convention (e.g., `log.user.creating`, `validation.email.required`)

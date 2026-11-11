@@ -13,6 +13,13 @@ Implement OpenTelemetry-based distributed tracing with Jaeger backend for compre
 - **Context Propagation**: Automatic trace context propagation across reactive Mutiny streams
 - **Custom Instrumentation**: Manual span creation for business-critical operations
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | `quarkus-opentelemetry` extension configuration, OTLP gRPC/HTTP exporter setup, `@WithSpan` annotation and manual span creation, span naming and attribute conventions, W3C Trace Context propagation across Mutiny streams, `parentbased_traceidratio` sampling configuration |
+| **Approver** | Tech Lead / Software Architect | Tracing backend selection trade-offs (Jaeger vs. Zipkin vs. cloud-provider tracing), sampling strategy decisions (dev 100% vs. prod 1-10%), tracing overhead budget enforcement (<5% memory, <2ms latency), sensitive-data-in-traces policy |
+
 # Constraints:
 
 - All tracing components **MUST** work with GraalVM native compilation

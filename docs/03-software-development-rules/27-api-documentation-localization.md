@@ -13,6 +13,13 @@ Implement hybrid OpenAPI documentation combining static build-time documentation
 - Complete resource bundle translations for all API documentation strings
 - Localized documentation endpoints accessible via REST API
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | SmallRye OpenAPI annotation maintenance with `MessageKeys.Api` key comments, runtime `ApiDocumentationService` implementation, localized documentation REST endpoints, resource bundle translations for API documentation strings, graceful English fallback behavior |
+| **Approver** | Tech Lead / Software Architect | Hybrid documentation strategy decisions (static vs. runtime localization), OpenAPI toolchain compatibility governance, documentation overhead budgets (10ms response, 5MB per locale), supported locale scope for API docs |
+
 # Constraints:
 
 - Static annotations **MUST** remain unchanged to preserve toolchain compatibility

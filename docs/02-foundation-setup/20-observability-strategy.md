@@ -13,6 +13,13 @@ Implement a comprehensive Three Pillars of Observability strategy integrating **
 - **Visualization**: Grafana dashboards for unified observability (see ADR-22)
 - **Correlation**: Trace ID propagation across all three pillars
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | Three-pillar observability stack deployment (Prometheus, Jaeger, Grafana, Loki), Docker Compose observability services, trace ID correlation configuration across metrics/logs/traces, sampling strategy configuration, data retention policies |
+| **Approver** | Tech Lead / Software Architect | Observability platform selection trade-offs (open-source stack vs. commercial APM), overhead budget enforcement (<5% performance impact), sampling and data volume cost decisions, SLO and alerting policy governance |
+
 # Constraints:
 
 - Observability infrastructure **MUST NOT** add more than 5% overhead to application performance

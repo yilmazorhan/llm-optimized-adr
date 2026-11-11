@@ -14,6 +14,13 @@ Implement Hexagonal Architecture (Ports and Adapters pattern) with automated bou
 - Domain, Ports, Adapters layer separation **MUST** maintain inward dependency direction
 - Automated architectural tests **MUST** run in CI/CD pipeline
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Hexagonal architecture implementation (domain/port/adapter separation), ArchUnit rule authoring (layer checks, dependency direction verification), port interface design, adapter implementation with Quarkus CDI injection, non-blocking reactive adapter patterns |
+| **Approver** | Tech Lead / Software Architect | Architecture pattern selection trade-offs (Hexagonal vs. Layered vs. Clean), dependency inversion decisions, bounded context boundary governance, abstraction overhead assessment against latency/memory budgets |
+
 # Constraints:
 
 - Domain layer **MUST NOT** depend on adapter or infrastructure packages.

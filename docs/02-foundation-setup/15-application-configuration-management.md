@@ -118,6 +118,13 @@ RATE_LIMIT_MAX=1000
 OTEL_SAMPLE_RATIO=0.1
 ```
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | `application.properties` template maintenance, Quarkus profile configuration (`%dev`/`%test`/`%prod`), `${VAR:default}` environment variable substitution, MicroProfile Config injection (`@ConfigProperty`), security header and rate limiting properties |
+| **Approver** | Tech Lead / Software Architect | Configuration source strategy (properties vs. external services), secret management policy (env vars, Vault, Kubernetes Secrets), profile default security posture review, CI/CD deployment configuration governance |
+
 # Constraints:
 
 - **MUST NOT** deploy applications without mandatory security configurations enabled

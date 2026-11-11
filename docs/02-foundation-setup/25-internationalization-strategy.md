@@ -13,6 +13,13 @@ Implement externalized message management with locale-independent error codes an
 - **Thread-Safe Message Resolution**: Cached, concurrent message resolution service
 - **Hexagonal Architecture Integration**: Localization restricted to infrastructure adapters
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Resource bundle management (`[domain]-messages_[locale].properties`), structured error code registry (`[DOMAIN]-[CATEGORY]-[SEQUENCE]`), reactive locale context propagation via SmallRye Context Propagation, thread-safe `MessageResolver` with bounded caching, locale detection in infrastructure adapters only |
+| **Approver** | Tech Lead / Software Architect | i18n strategy trade-offs (resource bundles vs. database-driven vs. translation APIs), locale fallback policy, domain layer purity review (no locale references), supported locale scope decisions |
+
 # Constraints:
 
 - All i18n components **MUST** be compatible with GraalVM native compilation, including resource bundle loading and reflection configuration.

@@ -16,6 +16,13 @@ Optional sections **MAY** include: Scope (In-Scope / Out-of-Scope), Objectives, 
 
 When a business requirement satisfied, there **MUST** be an evidence located in `brd/BR-NNN/logs` folder. Such as unit test reports, application logs related with this business requirement, implementation plan, important decisions.
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Business Analyst / Product Owner | BRD authoring (user stories, RFC 2119 business rules, Gherkin acceptance scenarios), Cross-Cutting Concerns Checklist completion with ADR references, `BR-NNN` naming and sequencing, evidence collection in `brd/BR-NNN/logs` |
+| **Approver** | Tech Lead / Software Architect | Requirements governance (section structure, traceability policy), ADR reference validation in checklists, requirement-to-test mapping review, BRD identifier traceability enforcement in source code |
+
 # Constraints:
 
 - BRD files **MUST** reside in the `brd/` directory at the repository root

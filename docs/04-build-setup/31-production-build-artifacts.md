@@ -18,6 +18,13 @@ Implement a comprehensive production build pipeline that generates **five mandat
 | 4 | **Error Inventory Document** | Markdown | Comprehensive error code registry with remediation guidance |
 | 5 | **OpenAPI Specification** | YAML | API contract documentation following OpenAPI 3.x specification |
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | Production build pipeline implementation (single-invocation five-artifact generation), Quarkus container-image and JIB multi-stage Docker builds (non-root users), Flyway migration image packaging, Grafana dashboard export scripts, OpenAPI export automation, artifact versioning and publishing to registries |
+| **Approver** | Tech Lead / Software Architect | Artifact strategy decisions (five-artifact scope, monolithic vs. split images), build reproducibility and CI/CD time budget review (15 minutes), security scan gating policy, artifact version synchronization governance |
+
 # Constraints:
 
 **Build Process Constraints**:

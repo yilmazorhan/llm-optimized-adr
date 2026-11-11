@@ -12,6 +12,13 @@ Implement comprehensive Grafana-based monitoring dashboards with Prometheus metr
 - **Business Intelligence**: User operations, API usage patterns, validation metrics
 - **Infrastructure Health**: System resources, container metrics, service availability
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | DevOps / Platform Engineer | Grafana dashboard provisioning (JSON-as-code, datasource UID configuration), Prometheus scrape configuration and PromQL alerting rules, Micrometer custom metrics instrumentation (`http_server_*`, business and security counters), Alertmanager notification routing, 90-day metrics retention management |
+| **Approver** | Tech Lead / Software Architect | Monitoring platform selection trade-offs (Grafana/Prometheus vs. commercial APM vs. ELK), alert threshold and SLO policy decisions, dashboard role-based access governance, monitoring overhead budget enforcement (<5%) |
+
 # Constraints:
 
 - Monitoring overhead **MUST NOT** exceed 5% of application performance

@@ -8,6 +8,13 @@ Adopt **Flyway** as the standard tool for managing all database schema migration
 
 Hibernate's automatic schema generation (`quarkus.hibernate-orm.database.generation`) **MUST** be disabled in production environments and set to `none`.
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Flyway migration script authoring (`V{version}__{description}.sql` naming), `quarkus-flyway` configuration, backward-compatible schema design, migration validation and repair commands, Hibernate DDL generation disabling |
+| **Approver** | Tech Lead / Software Architect | Migration tool selection trade-offs (Flyway vs. Liquibase vs. Hibernate DDL), production migration sequencing decisions (pipeline step vs. startup), schema backward compatibility review, zero-downtime deployment strategy |
+
 # Constraints:
 
 *   **Production Safety:** Migrations **MUST** be applied in a controlled manner in production, preferably as a separate, reviewed step in the deployment pipeline rather than automatically on application startup.

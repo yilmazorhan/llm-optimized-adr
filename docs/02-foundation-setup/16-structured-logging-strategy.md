@@ -6,6 +6,13 @@ Unstructured logging in distributed systems causes: (1) increased Mean Time To R
 
 Implement comprehensive structured JSON logging with OpenTelemetry correlation, standardized formats, correlation ID propagation, sensitive data redaction, and centralized utilities.
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | JBoss Log Manager and `quarkus-logging-json` configuration, MDC correlation fields (`traceId`, `spanId`, `correlationId`), SmallRye context propagation across Mutiny async boundaries, `SensitiveValueSanitizer` redaction implementation, Checkstyle rules banning `System.out`/`printStackTrace()` |
+| **Approver** | Tech Lead / Software Architect | Logging strategy trade-offs (JBoss Log Manager vs. Log4j2), PII/PHI compliance review (GDPR/HIPAA redaction patterns), MDC key catalog governance, log volume and sampling cost decisions |
+
 # Constraints:
 
 - **Log Format**: Production (`%prod`) **MUST** use JSON output; development (`%dev`) **MAY** use plaintext

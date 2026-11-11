@@ -16,6 +16,13 @@ Implement reactive-first exception handling with structured error context using 
 - GraalVM native compilation compatibility
 - Centralized error code registry with remediation guidance
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Layered exception hierarchy implementation (`DomainException`/`InfrastructureException`), `ErrorContext` construction with error codes and correlation IDs, Mutiny `onFailure()` reactive error propagation, SmallRye Fault Tolerance configuration (`@Retry`, `@CircuitBreaker`, `@Timeout`), `@RegisterForReflection` for native builds, centralized error code registry maintenance |
+| **Approver** | Tech Lead / Software Architect | Exception taxonomy governance (domain vs. infrastructure error codes), port-level exception contract review, fault tolerance policy decisions (retry/circuit breaker thresholds), error code uniqueness and documentation standards |
+
 # Constraints:
 
 - Error context propagation **MUST NOT** introduce blocking operations in reactive streams

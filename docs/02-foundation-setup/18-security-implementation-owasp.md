@@ -18,6 +18,13 @@ Implement comprehensive OWASP Top 10 security using Quarkus Security with reacti
 - SSRF prevention with URL validation
 - Security headers and TLS 1.3+
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Quarkus Security and SmallRye JWT RS256 configuration, RSA-2048 key management and rotation, `@RolesAllowed`/`@Authenticated` RBAC enforcement at adapter boundaries, AES-256-GCM encryption implementation, input validation/sanitization, OWASP Dependency-Check integration (CVSS ≥ 7.0 gate) |
+| **Approver** | Tech Lead / Software Architect | Security framework selection trade-offs (Quarkus Security vs. Spring Security vs. custom), OWASP Top 10 compliance review, key rotation and secret management policy, TLS and security header policy governance, vulnerability scanning threshold decisions |
+
 # Constraints:
 
 - Security enforcement **MUST NOT** introduce blocking operations in reactive streams

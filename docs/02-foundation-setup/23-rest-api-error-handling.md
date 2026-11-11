@@ -17,6 +17,13 @@ Implement RFC 9457-compliant REST API error handling with structured Problem Det
 - GraalVM native compilation compatibility
 
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | RFC 9457 ProblemDetail model implementation, reactive `ExceptionMapper<T>` with `@Provider` registration, `HttpStatusMapper` error-code-to-status mapping, extension fields (`errorCode`, `correlationId`, `traceId`, `retryable`, `remediationSteps`), `@RegisterForReflection` for native serialization |
+| **Approver** | Tech Lead / Software Architect | Error contract stability governance (additive-only format changes), RFC 9457/RFC 7231 compliance review, error response content policy (no sensitive information), API gateway error aggregation compatibility |
+
 # Constraints:
 
 - Error responses **MUST** comply with RFC 9457 (Problem Details for HTTP APIs) specification

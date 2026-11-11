@@ -13,6 +13,13 @@ Use standardized code generation templates for all common architectural patterns
 - REST controllers with OpenAPI documentation and DTO mapping
 - Data Transfer Objects with Bean Validation integration
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Template authoring for all five categories (entities, ports, services, controllers, DTOs), template variable conventions (`{context}`, `{EntityName}`, `{field_name}`), hexagonal placement rules (`com.copilot.quarkus.[layer].[domain].[component]`), Mutiny return types, `@RegisterForReflection`/`@WithSpan` annotation embedding, template validation scripts |
+| **Approver** | Tech Lead / Software Architect | Template governance (approval for new categories and modifications), generated-code architectural compliance review (ArchUnit alignment with ADR-10/ADR-11), template vs. external generator tooling decisions, framework upgrade impact assessment |
+
 # Constraints:
 
 - Generated code **MUST** compile with GraalVM native image

@@ -18,6 +18,13 @@ Implement multi-module Maven architecture with distinct module types that enforc
 | **Library** | Single technical or domain concern (e.g., `security-lib`, `user-dto-lib`). | **MUST** have **ONE** responsibility. **MUST NOT** mix concerns (e.g., HTTP + DB). |
 | **Container** | Deployment assembly. | **MUST NOT** contain code. |
 
+# Ownership
+
+| Role | Person | Competencies |
+|------|--------|-------------|
+| **Responsible** | Senior Backend Developer | Maven multi-module reactor configuration (parent POM, `<modules>`, dependency management), module type design (Business/External/API/Library/Container), Maven Enforcer `bannedDependencies` rules, ArchUnit cycle and layer test authoring, multi-module build orchestration (`-pl`/`-am`) |
+| **Approver** | Tech Lead / Software Architect | Module decomposition trade-offs (granularity vs. build complexity), god-library and mixed-concern anti-pattern evaluation, platform library catalog governance (approvals for new libraries), circular dependency resolution decisions, alignment with hexagonal dependency direction (ADR-10) |
+
 # Constraints:
 
 - **No Circular Dependencies**: Modules **MUST** maintain a DAG (Directed Acyclic Graph) structure.
