@@ -114,6 +114,8 @@ Coding standards, testing, data handling, API documentation, and generation temp
 | [27](03-software-development-rules/27-api-documentation-localization.md) | API Documentation Localization | OpenAPI localization, internationalized API docs for non-English markets |
 | [29](03-software-development-rules/29-code-generation-templates.md) | Code Generation Templates | Implementation consistency templates for code generation |
 | [30](03-software-development-rules/30-business-requirement-format.md) | Business Requirement Format | BRD standard (`requirements/` directory, `BR-NNN-descriptive-name.md`), Gherkin scenarios, RFC 2119 rules, cross-cutting concerns checklist |
+| [32](03-software-development-rules/32-unit-testing-strategy.md) | Unit Testing Strategy | JUnit 5, Mockito, AssertJ, hexagonal test classification, JaCoCo 80% domain coverage gate |
+| [33](03-software-development-rules/33-integration-testing-strategy.md) | Integration Testing Strategy | `@QuarkusTest` two-tier strategy (HSQLDB + Testcontainers PostgreSQL via Dev Services), REST Assured, Failsafe/Surefire phase separation |
 
 ### 04 — Build Setup
 
