@@ -4,7 +4,7 @@ Unstructured business requirements cause ambiguity, leading to incorrect impleme
 
 # Decision:
 
-All Business Requirement Documents **MUST** be stored as versioned Markdown files in the `brd/BR-NNN` directory, following the `BR-NNN-descriptive-name.md` naming convention. Each BRD **MUST** contain the following numbered sections:
+All Business Requirement Documents **MUST** be stored as versioned Markdown files in the `requirements/` directory, following the `BR-NNN-descriptive-name.md` naming convention. Each BRD **MUST** contain the following numbered sections:
 
 1. **Summary** — A high-level overview including a user story in "As a [role], I want [goal], So that [benefit]" format and a prose description of the feature scope.
 2. **Business Rules** — An itemized list of rules using the BRD identifier prefix (e.g., `BR-001-01`, `BR-001-02`), each using RFC 2119 requirement levels (SHALL, MUST, SHOULD).
@@ -14,18 +14,18 @@ All Business Requirement Documents **MUST** be stored as versioned Markdown file
 
 Optional sections **MAY** include: Scope (In-Scope / Out-of-Scope), Objectives, Non-Functional Requirements, Implementation Phases, REST API Endpoints, and Database Schema.
 
-When a business requirement satisfied, there **MUST** be an evidence located in `brd/BR-NNN/logs` folder. Such as unit test reports, application logs related with this business requirement, implementation plan, important decisions.
+When a business requirement satisfied, there **MUST** be an evidence located in `requirements/BR-NNN-*/logs/` folder. Such as unit test reports, application logs related with this business requirement, implementation plan, important decisions.
 
 # Ownership
 
 | Role | Person | Competencies |
 |------|--------|-------------|
-| **Responsible** | Business Analyst / Product Owner | BRD authoring (user stories, RFC 2119 business rules, Gherkin acceptance scenarios), Cross-Cutting Concerns Checklist completion with ADR references, `BR-NNN` naming and sequencing, evidence collection in `brd/BR-NNN/logs` |
+| **Responsible** | Business Analyst / Product Owner | BRD authoring (user stories, RFC 2119 business rules, Gherkin acceptance scenarios), Cross-Cutting Concerns Checklist completion with ADR references, `BR-NNN` naming and sequencing, evidence collection in `requirements/BR-NNN-*/logs/` |
 | **Approver** | Tech Lead / Software Architect | Requirements governance (section structure, traceability policy), ADR reference validation in checklists, requirement-to-test mapping review, BRD identifier traceability enforcement in source code |
 
 # Constraints:
 
-- BRD files **MUST** reside in the `brd/` directory at the repository root
+- BRD files **MUST** reside in the `requirements/` directory at the repository root
 - BRD filenames **MUST** follow `BR-NNN-descriptive-name.md` where NNN is a zero-padded sequence number
 - Business rules **MUST** use RFC 2119 requirement levels (MUST, SHALL, SHOULD, MAY)
 - Acceptance Criteria **MUST** be solid clear
@@ -40,7 +40,7 @@ When a business requirement satisfied, there **MUST** be an evidence located in 
 
 # Rationale:
 
-The Gherkin syntax specification (https://cucumber.io/docs/gherkin/reference/) defines a structured `Given`/`When`/`Then` format that maps directly to executable test steps in Cucumber, Karate, and similar frameworks — every acceptance scenario written in Gherkin is parseable by test runners without manual translation. Storing BRDs as Markdown files in the same Git repository as source code ensures atomic commits: a feature branch contains both the requirement changes and the implementing code, which `git log --all -- brd/BR-001*.md` can trace. The RFC 2119 keyword convention (https://www.rfc-editor.org/rfc/rfc2119) provides unambiguous requirement levels (MUST vs. SHOULD vs. MAY) that eliminate interpretation disputes across teams. The Cross-Cutting Concerns Checklist links each non-functional area to its governing ADR, producing a verifiable mapping rather than implicit assumptions.
+The Gherkin syntax specification (https://cucumber.io/docs/gherkin/reference/) defines a structured `Given`/`When`/`Then` format that maps directly to executable test steps in Cucumber, Karate, and similar frameworks — every acceptance scenario written in Gherkin is parseable by test runners without manual translation. Storing BRDs as Markdown files in the same Git repository as source code ensures atomic commits: a feature branch contains both the requirement changes and the implementing code, which `git log --all -- "requirements/BR-001*.md"` can trace. The RFC 2119 keyword convention (https://www.rfc-editor.org/rfc/rfc2119) provides unambiguous requirement levels (MUST vs. SHOULD vs. MAY) that eliminate interpretation disputes across teams. The Cross-Cutting Concerns Checklist links each non-functional area to its governing ADR, producing a verifiable mapping rather than implicit assumptions.
 
 # Implementation Guidelines:
 
@@ -77,7 +77,7 @@ Each new BRD **MUST** begin from the following structure:
 
 ## Naming Convention
 
-- Directory: `brd/`
+- Directory: `requirements/`
 - File pattern: `BR-NNN-descriptive-name.md`
 - Rule identifiers: `BR-NNN-RR` (NNN = BRD number, RR = rule sequence)
 - Sequence numbers: zero-padded three digits, starting from `000`
@@ -114,12 +114,12 @@ Source code and test files **MUST** reference the governing BRD identifier in co
 
 | Criteria | Validation Method | Expected Result |
 |----------|-------------------|------------------|
-| BRD Directory | `ls -d brd/` | Directory exists, exit code 0 |
-| BRD Naming Convention | `find brd/ -name "BR-*.md" -type f \| head -5` | At least one BRD file matches `BR-NNN-*.md` pattern |
-| Summary with User Story | `grep -rl "As a\|As an" brd/*.md \| head -5` | User story format present in BRD files |
-| Business Rules with RFC 2119 | `grep -rl "SHALL\|MUST\|SHOULD" brd/*.md \| head -5` | RFC 2119 keywords in business rules |
-| Gherkin Acceptance Criteria | `grep -rl "Given.*\|When.*\|Then.*" brd/*.md \| head -5` | Gherkin scenarios present |
-| Cross-Cutting Concerns | `grep -rl "Cross-Cutting Concerns\|ADR Reference" brd/*.md \| head -5` | Checklist table present |
+| BRD Directory | `ls -d requirements/` | Directory exists, exit code 0 |
+| BRD Naming Convention | `find requirements/ -name "BR-*.md" -type f \| head -5` | At least one BRD file matches `BR-NNN-*.md` pattern |
+| Summary with User Story | `grep -rl "As a\|As an" requirements/BR-*.md \| head -5` | User story format present in BRD files |
+| Business Rules with RFC 2119 | `grep -rl "SHALL\|MUST\|SHOULD" requirements/BR-*.md \| head -5` | RFC 2119 keywords in business rules |
+| Gherkin Acceptance Criteria | `grep -rl "Given.*\|When.*\|Then.*" requirements/BR-*.md \| head -5` | Gherkin scenarios present |
+| Cross-Cutting Concerns | `grep -rl "Cross-Cutting Concerns\|ADR Reference" requirements/BR-*.md \| head -5` | Checklist table present |
 | BRD Traceability in Code | `grep -rl "BR-[0-9]" */src/ 2>/dev/null \| head -5` | BRD identifiers referenced in source/test files |
 | Build Success | `./mvnw clean verify` | Exit code 0 |
 
@@ -131,7 +131,7 @@ echo "Validating Business Requirement Format..."
 FAIL=0
 
 # Check BRD directory exists
-if [ -d "brd" ]; then
+if [ -d "requirements" ]; then
   echo "✅ BRD directory exists"
 else
   echo "❌ BRD directory not found"
@@ -140,14 +140,14 @@ fi
 
 # Check BRD naming convention
 FOUND=0
-for f in brd/BR-*.md; do
+for f in requirements/BR-*.md; do
   if [ -f "$f" ]; then
     FOUND=1
     break
   fi
 done
 if [ "$FOUND" -eq 1 ]; then
-  BRD_COUNT=$(find brd/ -name "BR-*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+  BRD_COUNT=$(find requirements/ -name "BR-*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
   echo "✅ BRDs follow BR-NNN naming convention ($BRD_COUNT files)"
 else
   echo "❌ No BRD files matching BR-*.md pattern"
@@ -156,7 +156,7 @@ fi
 
 # Check for user story format
 FOUND=0
-for f in brd/BR-*.md; do
+for f in requirements/BR-*.md; do
   if [ -f "$f" ] && grep -ql "As a\|As an" "$f" 2>/dev/null; then
     FOUND=1
     break
@@ -171,7 +171,7 @@ fi
 
 # Check for RFC 2119 keywords in business rules
 FOUND=0
-for f in brd/BR-*.md; do
+for f in requirements/BR-*.md; do
   if [ -f "$f" ] && grep -ql "SHALL\|MUST\|SHOULD" "$f" 2>/dev/null; then
     FOUND=1
     break
@@ -186,7 +186,7 @@ fi
 
 # Check for Gherkin acceptance criteria
 FOUND=0
-for f in brd/BR-*.md; do
+for f in requirements/BR-*.md; do
   if [ -f "$f" ] && grep -ql "Given\|When\|Then" "$f" 2>/dev/null; then
     FOUND=1
     break
@@ -201,7 +201,7 @@ fi
 
 # Check for Cross-Cutting Concerns checklist
 FOUND=0
-for f in brd/BR-*.md; do
+for f in requirements/BR-*.md; do
   if [ -f "$f" ] && grep -ql "Cross-Cutting Concerns\|ADR Reference" "$f" 2>/dev/null; then
     FOUND=1
     break

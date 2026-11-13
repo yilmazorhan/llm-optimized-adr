@@ -6,18 +6,40 @@ As a **developer**, I want **a fully configured development environment with all
 
 ## 2. Business Rules
 
-- **BR-000-01**: Implement ADR-02 (Java Runtime Environment) — JDK 21.0.4 Eclipse Temurin via SDKMAN
-- **BR-000-02**: Implement ADR-03 (Build Automation) — Maven 3.9.8 with Maven Wrapper
-- **BR-000-03**: Implement ADR-04 (Toolchain Version Management) — .sdkmanrc with pinned versions
-- **BR-000-04**: Implement ADR-05 (Containerization Infrastructure) — Docker 24.0+, Docker Compose 2.24+
-- **BR-000-05**: Implement ADR-06 (Development Environment Automation) — Makefile, setup.sh, Docker Compose services
-- **BR-000-06**: Implement ADR-07 (Containerized Development Environment) — Graduated approach with host.docker.internal
-- **BR-000-07**: Implement ADR-08 (Application Framework) — Quarkus 3.32.2 with BOM
+- **BR-000-01**: The development environment **MUST** provide JDK 21.0.4 (Eclipse Temurin) managed via SDKMAN, per ADR-02 §Decision.
+- **BR-000-02**: All builds **MUST** use Maven 3.9.8 through the committed Maven Wrapper, per ADR-03 §Decision.
+- **BR-000-03**: Toolchain versions **MUST** be pinned in `.sdkmanrc` and validated by `setup.sh`, per ADR-04 §Decision.
+- **BR-000-04**: Containerization **MUST** use Docker 24.0+ with Docker Compose 2.24+ (Compose auto-detection), per ADR-05 §Decision.
+- **BR-000-05**: Environment automation **MUST** be provided via Makefile, `setup.sh`, and Docker Compose services (Jaeger, Prometheus, Grafana), per ADR-06 §Decision.
+- **BR-000-06**: The containerized development environment **MUST** follow the graduated approach (Dev Services → Compose → Testcontainers) with `host.docker.internal`, per ADR-07 §Decision.
+- **BR-000-07**: All applications **MUST** use Quarkus 3.32.2 with the platform BOM import, per ADR-08 §Decision.
 
 ## 3. Acceptance Criteria / Scenarios
 
-- **MUST** validate all business rules
-- **MUST** satisfy all cross cutting concerns
+```gherkin
+Scenario: Environment setup completes successfully
+  Given a workstation with macOS or Linux and network access
+  When I run "make setup" (which executes setup.sh)
+  Then all pinned toolchain components are installed and validated
+  And the script exits with code 0
+
+Scenario: Active toolchain matches pinned versions
+  Given .sdkmanrc pins JDK 21.0.4-tem and Maven 3.9.8
+  When the setup.sh validation step runs
+  Then the active JDK and Maven versions match the pinned values exactly
+
+Scenario: Observability services are reachable
+  Given Docker 24.0+ and Docker Compose 2.24+ are installed
+  When I run "make start"
+  Then Jaeger responds on localhost:16686
+  And Prometheus responds on localhost:9090
+  And Grafana responds on localhost:3000
+
+Scenario: Quarkus dev mode boots on the platform
+  When I run "make dev" in the container module
+  Then Quarkus 3.32.2 starts with live reload enabled
+  And the health endpoint responds at localhost:8080/q/health
+```
 
 ## 4. Cross-Cutting Concerns Checklist
 
@@ -27,12 +49,13 @@ As a **developer**, I want **a fully configured development environment with all
 | Build Tooling | ADR-03, ADR-12 | Maven 3.9.8, Spotless 3.4.0, SpotBugs 4.9.8.3 | Yes |
 | Containerization | ADR-05, ADR-06 | Docker 24.0+, Compose auto-detection | Yes |
 | Observability | ADR-20, ADR-21, ADR-22 | Jaeger, Prometheus, Grafana with explicit UIDs | Yes |
-| Security | ADR-18 | OWASP headers, JWT RS256 | N/A (framework level) |
-| Configuration | ADR-15 | Profile-based application.properties | N/A (framework level) |
-| Logging | ADR-16 | JSON structured logging | N/A (framework level) |
-| Exception Handling | ADR-17 | Layered exception hierarchy | N/A (framework level) |
-| Package Structure | ADR-11 | Hexagonal architecture packages | N/A (framework level) |
+| Security | ADR-18 | OWASP headers, JWT RS256 | TBD (framework level) |
+| Configuration | ADR-15 | Profile-based application.properties | TBD (framework level) |
+| Logging | ADR-16 | JSON structured logging | TBD (framework level) |
+| Exception Handling | ADR-17 | Layered exception hierarchy | TBD (framework level) |
+| Package Structure | ADR-11 | Hexagonal architecture packages | TBD (framework level) |
 | Multi-Module | ADR-09 | Parent POM with dependency management | Yes |
+| Testing | ADR-32, ADR-33 | Surefire/Failsafe phase split and JaCoCo coverage gate wired in parent POM | TBD |
 
 ## 5. Related ADRs
 
@@ -64,3 +87,6 @@ As a **developer**, I want **a fully configured development environment with all
 - **ADR-29**: Code Generation Templates — Implementation consistency
 - **ADR-30**: Business Requirement Format — BRD standard format
 - **ADR-31**: Production Build Artifacts — Five mandatory artifacts
+- **ADR-32**: Unit Testing Strategy — JUnit 5, Mockito, AssertJ, JaCoCo coverage gate
+- **ADR-33**: Integration Testing Strategy — Two-tier HSQLDB/Oracle test infrastructure
+- **ADR-34**: Code Comment Standards — Traceability and algorithm explanation comments

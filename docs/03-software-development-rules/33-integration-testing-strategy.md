@@ -6,11 +6,11 @@ Unit tests (ADR-32) verify domain logic with mocked ports, but adapters, REST en
 
 # Decision:
 
-Adopt `@QuarkusTest` with a **two-tier infrastructure strategy** mapped to the multi-module structure (ADR-09): HSQLDB for fast adapter tests, and Testcontainers-backed PostgreSQL (via Quarkus Dev Services, ADR-07) for production-parity tests. REST endpoints **MUST** be tested with REST Assured; integration tests **MUST** run in the Failsafe `verify` phase, separated from Surefire unit tests.
+Adopt `@QuarkusTest` with a **two-tier infrastructure strategy** mapped to the multi-module structure (ADR-09): HSQLDB (Oracle compatibility mode, BR-001) for fast adapter tests, and Testcontainers-backed Oracle (via Quarkus Dev Services, ADR-07) for production-parity tests. REST endpoints **MUST** be tested with REST Assured; integration tests **MUST** run in the Failsafe `verify` phase, separated from Surefire unit tests.
 
 **Required Components**:
-- **Tier 1 — HSQLDB (fast)**: Persistence/adapter modules **MUST** use in-memory HSQLDB via the `%test` profile (BR-001, ADR-15) with Flyway migrations applied at start (ADR-14)
-- **Tier 2 — PostgreSQL parity**: The `container-app` module **MUST** run `@QuarkusTest` against disposable PostgreSQL started by Quarkus Dev Services (Testcontainers-backed, ADR-07)
+- **Tier 1 — HSQLDB (fast)**: Persistence/adapter modules **MUST** use in-memory HSQLDB in Oracle compatibility mode (`sql.syntax_ora=true`, BR-001) via the `%test` profile (ADR-15) with Flyway migrations applied at start (ADR-14)
+- **Tier 2 — Oracle parity**: The `container-app` module **MUST** run `@QuarkusTest` against a disposable Oracle database started by Quarkus Dev Services (Testcontainers-backed, ADR-07), matching the production database kind (BR-001)
 - **REST Assured**: HTTP endpoint integration tests **MUST** use REST Assured with given/when/then style
 - **Phase Separation**: Integration tests (named `*IntegrationTest`) **MUST** execute via the Maven Failsafe plugin in the `verify` phase; unit tests via Surefire in the `test` phase
 - **Tagging**: Every `@QuarkusTest` **MUST** carry `@Tag("integration")` (ADR-32 classification)
@@ -23,7 +23,7 @@ Adopt `@QuarkusTest` with a **two-tier infrastructure strategy** mapped to the m
 
 | Role | Person | Competencies |
 |------|--------|-------------|
-| **Responsible** | Senior Backend Developer | `@QuarkusTest` and `QuarkusTestProfile` authoring, HSQLDB `%test` datasource configuration (BR-001), Quarkus Dev Services / Testcontainers PostgreSQL setup, Flyway test migration lifecycle (ADR-14), REST Assured endpoint assertions including RFC 9457 `problem+json` verification (ADR-23), `@TestSecurity` authenticated testing (ADR-18), Surefire/Failsafe phase binding |
+| **Responsible** | Senior Backend Developer | `@QuarkusTest` and `QuarkusTestProfile` authoring, HSQLDB Oracle-compatibility `%test` datasource configuration (BR-001), Quarkus Dev Services / Testcontainers Oracle setup, Flyway test migration lifecycle (ADR-14), REST Assured endpoint assertions including RFC 9457 `problem+json` verification (ADR-23), `@TestSecurity` authenticated testing (ADR-18), Surefire/Failsafe phase binding |
 | **Approver** | Tech Lead / Software Architect | Integration scope policy (what must be integration-tested vs. unit-tested), production-parity tiering decisions (HSQLDB vs. Testcontainers), CI container resource and time budget governance, test environment strategy alignment with the ADR-07 graduated approach |
 
 # Constraints:
@@ -31,7 +31,7 @@ Adopt `@QuarkusTest` with a **two-tier infrastructure strategy** mapped to the m
 - Integration tests **MUST NOT** depend on manually started, developer-local services (Docker Compose stacks, running databases); all dependencies **MUST** start automatically within the test run
 - Integration tests **MUST NOT** run in parallel (shared database state); parallel execution is reserved for unit tests (ADR-32)
 - Each integration test class **MUST** start from a clean database state (Flyway re-migration or transactional rollback)
-- Tier 2 tests **MUST** execute against PostgreSQL, matching the production database kind; HSQLDB **MUST NOT** be the only validation target for persistence adapters
+- Tier 2 tests **MUST** execute against Oracle, matching the production database kind (BR-001); HSQLDB **MUST NOT** be the only validation target for persistence adapters
 - `Thread.sleep()` **MUST NOT** appear in any test (ADR-32); readiness polling **MUST** use Awaitility or Quarkus-managed startup
 - REST assertions on error paths **MUST** verify `Content-Type: application/problem+json` and the `errorCode` extension field (ADR-23)
 - `%test.quarkus.hibernate-orm.database.generation` **MUST** be `none`; schema changes in tests **MUST** come from Flyway scripts only (ADR-14, ADR-15)
@@ -40,13 +40,13 @@ Adopt `@QuarkusTest` with a **two-tier infrastructure strategy** mapped to the m
 
 # Alternatives:
 
-1. **HSQLDB-Only Integration Testing (no production-parity tier)**: Run all adapter and endpoint tests against in-memory HSQLDB, skipping PostgreSQL entirely. Rejected because: Flyway's supported-databases documentation classifies SQL migrations as database-specific — scripts written for one database are not guaranteed to run on another (https://documentation.red-gate.com/flyway/docs/getting-started/supported-databases). PostgreSQL-specific DDL (e.g., `SERIAL`, `JSONB`, partial indexes, `SEQUENCE ... OWNED BY`) fails or behaves differently on HSQLDB, so migration defects would only surface in production. Tier 1 remains valuable for speed (BR-001), but it cannot substitute for production-parity validation.
+1. **HSQLDB-Only Integration Testing (no production-parity tier)**: Run all adapter and endpoint tests against in-memory HSQLDB, skipping Oracle entirely. Rejected because: Flyway's supported-databases documentation classifies SQL migrations as database-specific — scripts written for one database are not guaranteed to run on another (https://documentation.red-gate.com/flyway/docs/getting-started/supported-databases). Oracle-specific DDL (e.g., `NUMBER` precision semantics, `VARCHAR2` semantics, `SEQUENCE ... START WITH ... INCREMENT BY`, `CONNECT BY` hierarchical queries) fails or behaves differently on HSQLDB even in Oracle compatibility mode, so migration defects would only surface in production. Tier 1 remains valuable for speed (BR-001), but it cannot substitute for production-parity validation.
 
-2. **Shared Docker Compose Test Environment**: Start Jaeger/PostgreSQL/etc. via `docker-compose up` before the test run, point tests at fixed hostnames and ports. Rejected because: service lifecycle is external to the build — nothing guarantees the stack is running, current, or healthy when tests execute, and fixed ports conflict across parallel CI jobs. Quarkus Dev Services starts and stops disposable containers automatically per test run via Testcontainers, with container cleanup handled by the library (https://quarkus.io/guides/databases-dev-services). This is the same graduated conclusion as ADR-07: Compose serves long-running development, not automated tests.
+2. **Shared Docker Compose Test Environment**: Start Jaeger/Oracle/etc. via `docker-compose up` before the test run, point tests at fixed hostnames and ports. Rejected because: service lifecycle is external to the build — nothing guarantees the stack is running, current, or healthy when tests execute, and fixed ports conflict across parallel CI jobs. Quarkus Dev Services starts and stops disposable containers automatically per test run via Testcontainers, with container cleanup handled by the library (https://quarkus.io/guides/databases-dev-services). This is the same graduated conclusion as ADR-07: Compose serves long-running development, not automated tests.
 
 # Rationale:
 
-`@QuarkusTest` boots the complete application context — CDI beans, configuration, RESTEasy Reactive endpoints, security filters — validating wiring that unit tests with mocked ports cannot reach (https://quarkus.io/guides/getting-started-testing). Quarkus Dev Services detects the configured database kind and launches a matching disposable container via Testcontainers when no JDBC URL is set, removing manual orchestration from the test lifecycle (https://quarkus.io/guides/databases-dev-services). The two-tier split follows the module boundaries of ADR-09: persistence modules (External System type) validate adapters quickly on HSQLDB (BR-001), while the `container-app` deployment assembly — the module whose `db-kind` is the production PostgreSQL — runs the parity tier. `db-kind` is a build-time property in Quarkus, so the two tiers **MUST** live in separate modules rather than test profiles of one module (https://quarkus.io/guides/databases-dev-services).
+`@QuarkusTest` boots the complete application context — CDI beans, configuration, RESTEasy Reactive endpoints, security filters — validating wiring that unit tests with mocked ports cannot reach (https://quarkus.io/guides/getting-started-testing). Quarkus Dev Services detects the configured database kind and launches a matching disposable container via Testcontainers when no JDBC URL is set, removing manual orchestration from the test lifecycle (https://quarkus.io/guides/databases-dev-services). The two-tier split follows the module boundaries of ADR-09: persistence modules (External System type) validate adapters quickly on HSQLDB in Oracle compatibility mode (BR-001), while the `container-app` deployment assembly — the module whose `db-kind` is the production Oracle — runs the parity tier. `db-kind` is a build-time property in Quarkus, so the two tiers **MUST** live in separate modules rather than test profiles of one module (https://quarkus.io/guides/databases-dev-services).
 
 The Maven Failsafe plugin executes `*IntegrationTest` classes in the `integration-test` phase and verifies outcomes in `verify`, by design separating slow integration cycles from the Surefire `test` phase while keeping both inside `./mvnw clean verify` (https://maven.apache.org/surefire/maven-failsafe-plugin/). REST Assured provides given/when/then HTTP assertions with JSON path matching on response bodies, used by the official Quarkus testing guide for endpoint validation (https://rest-assured.io/). `@TestSecurity` injects test JWT security identities without real key infrastructure, exercising the actual security filters of ADR-18 (https://quarkus.io/guides/security-testing). Awaitility provides declarative readiness polling as the substitute for forbidden `Thread.sleep()` calls (https://github.com/awaitility/awaitility).
 
@@ -115,25 +115,25 @@ The Maven Failsafe plugin executes `*IntegrationTest` classes in the `integratio
 
 Both phases run inside `./mvnw clean verify` — no test category is skipped (ADR-12). `-Dgroups=integration` selects integration tests only for targeted runs.
 
-## 3. Tier 1 Configuration — HSQLDB (persistence modules, `%test`)
+## 3. Tier 1 Configuration — HSQLDB Oracle Compatibility (persistence modules, `%test`)
 
 ```properties
-# %test profile (ADR-15) — in-memory HSQLDB (BR-001)
+# %test profile (ADR-15) — in-memory HSQLDB, Oracle compatibility mode (BR-001)
 %test.quarkus.datasource.db-kind=hsqldb
-%test.quarkus.datasource.jdbc.url=jdbc:hsqldb:mem:testdb;DB_CLOSE_DELAY=-1
+%test.quarkus.datasource.jdbc.url=jdbc:hsqldb:mem:testdb;DB_CLOSE_DELAY=-1;sql.syntax_ora=true
 %test.quarkus.hibernate-orm.database.generation=none
 %test.quarkus.flyway.migrate-at-start=true
 %test.quarkus.flyway.clean-at-start=true
 ```
 
-`clean-at-start=true` + `migrate-at-start=true` guarantee a clean, fully migrated schema per test class (ADR-14).
+`sql.syntax_ora=true` enables Oracle SQL syntax per BR-001. `clean-at-start=true` + `migrate-at-start=true` guarantee a clean, fully migrated schema per test class (ADR-14).
 
-## 4. Tier 2 Configuration — PostgreSQL Parity (`container-app`)
+## 4. Tier 2 Configuration — Oracle Parity (`container-app`)
 
 ```properties
 # container-app application.properties (build-time db-kind = production database)
-quarkus.datasource.db-kind=postgresql
-# No %test JDBC URL: Dev Services starts a disposable PostgreSQL container
+quarkus.datasource.db-kind=oracle
+# No %test JDBC URL: Dev Services starts a disposable Oracle container
 # via Testcontainers per test run (ADR-07) and injects the URL automatically.
 %test.quarkus.hibernate-orm.database.generation=none
 %test.quarkus.flyway.migrate-at-start=true
@@ -223,7 +223,7 @@ class UserResourceIntegrationTest {
 
 # Additional Recommendations:
 
-- **RECOMMENDED** Keep Tier 1 suites lean (schema-only interactions); anything exercising PostgreSQL-specific SQL belongs in Tier 2.
+- **RECOMMENDED** Keep Tier 1 suites lean (schema-only interactions); anything exercising Oracle-specific SQL belongs in Tier 2.
 - **RECOMMENDED** Assert health endpoint responses (`/q/health`) in one Tier 2 test per application to verify the ADR-20 observability wiring.
 - **RECOMMENDED** Use `@QuarkusTestProfile` for scenarios requiring different configuration (feature flags, alternative mocks) rather than duplicating test classes.
 - **RECOMMENDED** Merge JaCoCo execution data from Surefire and Failsafe so the ADR-32 coverage gate sees combined coverage.

@@ -696,7 +696,7 @@ quarkus.http.header."Accept-Language".enabled=true
     <!-- Core Quarkus dependencies -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+        <artifactId>quarkus-rest-jackson</artifactId>
     </dependency>
     
     <!-- Context propagation for reactive locale handling -->

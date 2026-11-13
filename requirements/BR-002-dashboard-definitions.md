@@ -87,8 +87,12 @@ Scenario: Dashboard ID uniqueness enforced
 | Configuration | ADR-15 | Datasource names mapped to configured database connections in application.properties | Yes (`reporting.datasources` allow-list; unknown datasource rejected at load) |
 | Error Handling | ADR-23 | Validation failures returned as RFC 9457 Problem Details | Partial (typed domain exceptions + error codes at the service layer; the `application/problem+json` REST mapper is BR-003 scope — no endpoint in BR-002) |
 | Code Quality | ADR-12 | YAML parsing POJOs follow Google Java Style, validated by Spotless | Yes (Spotless/Checkstyle/PMD/SpotBugs in the `quality` Maven profile; `make lint-quality`) |
+| Testing | ADR-32, ADR-33 | Masking strategies as pure unit tests; schema validation as `@QuarkusTest` integration tests | Yes (see section 5b) |
 
-### Implementation & Verification Notes
+### Implementation & Verification Notes (Evidence — ADR-30 §Decision)
+
+> Per ADR-30: evidence that business rules are satisfied **MUST** be located in the BRD's `logs/` folder
+> (test reports, application logs, implementation plans, decisions).
 
 - Modules (ADR-09/10/11, hexagonal): `platform-domain` (model, `MaskingService`, `DashboardRegistry`,
   error codes), `platform-infrastructure` (YAML source, JSON meta-schema validator, Git watcher),
@@ -111,6 +115,13 @@ Scenario: Dashboard ID uniqueness enforced
 - ADR-18: Security Implementation (OWASP) — Data masking as security control
 - ADR-23: REST API Error Handling — RFC 9457 error responses for validation failures
 - ADR-25: Internationalization Strategy — Localized column labels
+- ADR-34: Code Comment Standards — Traceability comments (`BR-002-NN`) in masking and schema code
+
+## 5b. Test Classification (ADR-32/ADR-33)
+
+- Masking strategies (`partial_text`, `suffix_only`, `email_mask`, `full_redact`) — unit tier (ADR-32): pure domain logic, no context boot, mocked ports
+- YAML meta-schema validation — integration tier (ADR-33): `@QuarkusTest` with file loading and datasource mapping
+- Git watcher file-modification detection — integration tier (ADR-33)
 
 ## 6. Scope
 

@@ -26,7 +26,7 @@ This feature defines the core backend execution pipelines including SQL injectio
 - **BR-004-16**: Pagination offset **MUST** be applied via `query.setFirstResult(offset)`.
 - **BR-004-17**: The hypermedia response builder **MUST** generate `next` link only when `hasNext = true`.
 - **BR-004-18**: The hypermedia response builder **MUST** generate `prev` link only when `offset > 0`.
-- **BR-004-19**: Jackson ObjectMapper **MUST** be configured with `quarkus.jackson.write-bigdecimals-as-plain-strings=true` globally.
+- **BR-004-19**: BigDecimal values **MUST** be serialized as JSON strings via a custom Jackson serializer registered through a Quarkus `ObjectMapperCustomizer` CDI bean (e.g., Jackson `ToStringSerializer` for `BigDecimal`). A global `quarkus.jackson.*` property **MUST NOT** be relied upon for this rule: no such property exists, and Jackson's `WRITE_BIGDECIMAL_AS_PLAIN` still emits a JSON number, not a string (https://quarkus.io/guides/rest-json).
 - **BR-004-20**: Database exception details **MUST** be written to infrastructure logs only; sanitized error tokens **MUST** be returned to API callers.
 
 ## 3. Acceptance Criteria / Scenarios
@@ -146,7 +146,7 @@ Scenario: Database error logged but not exposed
 
 ### Phase 1: Core Framework & YAML Processing Pipeline
 
-- **Task 1.1:** Initialize Quarkus infrastructure with Java 21 LTS; add `quarkus-resteasy-reactive`, `quarkus-resteasy-reactive-jackson`, and `quarkus-agroal` dependencies.
+- **Task 1.1:** Initialize Quarkus infrastructure with Java 21 LTS; add `quarkus-rest`, `quarkus-rest-jackson`, and `quarkus-agroal` dependencies (Quarkus 3.x artifact names per ADR-08).
 - **Task 1.2:** Add YAML parsing dependency: `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml`.
 - **Task 1.3:** Build `DashboardSchema` POJO mapping YAML block literals to multi-line string properties.
 - **Task 1.4:** Build `GitSchemaRegistry` with file observer threads loading configurations into `ConcurrentHashMap`.
@@ -156,7 +156,7 @@ Scenario: Database error logged but not exposed
 - **Task 2.1:** Build `QueryExecutionService` injecting `EntityManager` for database routing.
 - **Task 2.2:** Implement parameter binding mapping filter inputs to `query.setParameter(key, value)`.
 - **Task 2.3:** Build `TypeEnforcementFilter` using `ResultSetMetaData.getColumnType()` to abort on non-primitive types.
-- **Task 2.4:** Configure Jackson: `quarkus.jackson.write-bigdecimals-as-plain-strings=true`.
+- **Task 2.4:** Register an `ObjectMapperCustomizer` CDI bean applying `ToStringSerializer` to `BigDecimal` (BR-004-19; decimal-as-string contract shared with BR-003-09).
 
 ### Phase 3: Look-Ahead Database Pagination
 

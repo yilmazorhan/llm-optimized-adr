@@ -23,12 +23,42 @@ This requirement establishes the test database layer that enables rapid, isolate
 - **BR-001-13**: Date and timestamp test data **MUST** include boundary values: epoch start, year 2000, current year, and future dates.
 - **BR-001-14**: The HSQLDB datasource **MUST** be injectable via Quarkus CDI using the same `datasource` name referenced in dashboard YAML configurations.
 - **BR-001-15**: Test infrastructure **MUST NOT** require Docker, network access, or any external service to execute.
-- **BR-001-16**: Schema and data scripts **MUST** be idempotent — safe to execute multiple times without errors (`CREATE TABLE IF NOT EXISTS` or equivalent, `MERGE` for data).
+- **BR-001-16**: Schema and data scripts **MUST** be idempotent — safe to execute multiple times without errors. Idempotency guards **MAY** use HSQLDB-native syntax (`CREATE TABLE IF NOT EXISTS`, `DROP TABLE IF EXISTS`); data seeding **MUST** use `MERGE` (Oracle-compatible). The schema DDL itself **MUST** remain Oracle-compatible per BR-001-03.
 
 ## 3. Acceptance Criteria / Scenarios
 
-- HSQLDB **MUST** run in Oracle compatibility mode
-- all tests **MUST** use in-memory HSQLDB
+```gherkin
+Scenario: Oracle compatibility mode is active
+  Given the %test profile datasource is configured with sql.syntax_ora=true
+  When a test suite connects to the in-memory database
+  Then Oracle-compatible SQL syntax (NUMBER, VARCHAR2, DATE, TIMESTAMP) executes without errors
+
+Scenario: Schema initialization runs automatically before the suite
+  Given schema scripts are placed in src/test/resources/db/
+  When the test suite starts
+  Then all sample tables exist with the defined Oracle-compatible column types
+  And the scripts executed without manual intervention
+
+Scenario: Seed data supports look-ahead pagination boundaries
+  Given a primary table contains 50 seeded rows
+  When a pagination test requests offset=0 limit=20 with look-ahead limit+1
+  Then 21 rows are returned and the pagination logic is exercised correctly
+
+Scenario: All column types and null handling are represented
+  Given the seed data covers VARCHAR2, NUMBER, FLOAT, NUMBER(1), TIMESTAMP, and DATE columns
+  When a row containing NULL values for nullable columns is serialized
+  Then the null values are represented without serialization errors
+
+Scenario: Type enforcement guard rejects disallowed column types
+  Given the type enforcement test table contains CLOB and BLOB columns
+  When the security guard inspects ResultSetMetaData
+  Then the disallowed types are detected and execution aborts
+
+Scenario: Test infrastructure runs without external dependencies
+  Given a workstation with no Docker daemon and no network access to databases
+  When the test suite executes
+  Then all tests complete successfully using the JVM-embedded HSQLDB
+```
 
 ## 4. Cross-Cutting Concerns Checklist
 
@@ -41,6 +71,7 @@ This requirement establishes the test database layer that enables rapid, isolate
 | Logging | ADR-16 | Test execution logs SQL statements at DEBUG level | Yes |
 | Security | ADR-18 | Type enforcement guard validated against HSQLDB metadata | Yes |
 | Build | ADR-03 | HSQLDB dependency scoped to `test` in Maven POM | Yes |
+| Testing | ADR-32, ADR-33 | HSQLDB serves as Tier 1 fast adapter tests in the two-tier strategy | Yes |
 
 ## 5. Related ADRs
 
@@ -51,3 +82,5 @@ This requirement establishes the test database layer that enables rapid, isolate
 - ADR-15: Application Configuration Management — %test profile datasource configuration
 - ADR-23: REST API Error Handling — Error responses validated against in-memory data
 - ADR-24: Data Transfer & Validation — DTO serialization validated with known test data
+- ADR-32: Unit Testing Strategy — HSQLDB-backed tests stay context-free unit tier
+- ADR-33: Integration Testing Strategy — HSQLDB is the Tier 1 database for adapter tests

@@ -46,7 +46,7 @@ Implement a three-class comment taxonomy — **Traceability Comments**, **Algori
 
 # Rationale:
 
-ADR-30 defines the BRD identifier grammar (`BR-NNN` documents, `BR-NNN-RR` rules) and already requires source/test references to governing identifiers; this ADR extends that convention with a precise in-code syntax that names the *part* of the document the code relates to, making the reference verifiable (`grep "BR-001-02"` in source maps to `brd/BR-001-*.md` rule 02, per the ADR-30 naming convention). ADR documents are numbered and section-anchored (`# Decision:`, `# Constraints:`), so `ADR-NN §<section-name>` resolves unambiguously.
+ADR-30 defines the BRD identifier grammar (`BR-NNN` documents, `BR-NNN-RR` rules) and already requires source/test references to governing identifiers; this ADR extends that convention with a precise in-code syntax that names the *part* of the document the code relates to, making the reference verifiable (`grep "BR-001-02"` in source maps to `requirements/BR-001-*.md` rule 02, per the ADR-30 naming convention). ADR documents are numbered and section-anchored (`# Decision:`, `# Constraints:`), so `ADR-NN §<section-name>` resolves unambiguously.
 
 PMD provides source-level comment enforcement that runs in the existing ADR-12 pipeline: the `CommentRequired` rule family (class/method/field comment presence) and `CommentSize` rule (comment length limits) operate on Java source text during `pmd:check` (https://docs.pmd-code.org/latest/pmd_rules_java_comments.html). Google Java Style is the ADR-12 style baseline and defines both where Javadoc is required (§7.2) and where it is optional (§7.3), giving the taxonomy an authoritative, non-subjective boundary (https://google.github.io/styleguide/javaguide.html#s7-javadoc).
 

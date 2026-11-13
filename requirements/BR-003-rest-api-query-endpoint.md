@@ -101,6 +101,8 @@ Scenario: Internal error does not leak implementation details
 | Error Handling | ADR-23 | All errors mapped to RFC 9457 Problem Details format | TBD |
 | Validation | ADR-24 | Request DTO validated with Bean Validation annotations | TBD |
 | API Documentation | ADR-27 | OpenAPI 3.0.3 spec generated for the query endpoint | TBD |
+| Testing | ADR-32, ADR-33 | Endpoint integration tests via REST Assured `@QuarkusTest`; `problem+json` and hypermedia contract assertions | TBD |
+| Comment Standards | ADR-34 | `BR-003-NN` traceability comments in controller and mapper code | TBD |
 
 ## 5. Related ADRs
 
@@ -113,6 +115,8 @@ Scenario: Internal error does not leak implementation details
 - ADR-24: Data Transfer & Validation — DTO patterns with Bean Validation
 - ADR-25: Internationalization Strategy — Localized error messages
 - ADR-27: API Documentation Localization — OpenAPI spec generation
+- ADR-33: Integration Testing Strategy — REST Assured endpoint tests (hypermedia, masking, problem+json contracts)
+- ADR-34: Code Comment Standards — `BR-003-NN` traceability comments in controller and mapper code
 
 ## 6. Scope
 
