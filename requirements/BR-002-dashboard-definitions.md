@@ -18,7 +18,7 @@ This feature defines the YAML specification for dashboard configurations includi
 - **BR-002-08**: Filter definitions **MUST** specify `name`, `type`, and `required` properties; `type` **MUST** be one of: `date`, `datetime`, `boolean`, `dynamic_kv`.
 - **BR-002-09**: Filters of type `dynamic_kv` **MUST** include a `lookup_sql` property containing the SQL query for key-value pair retrieval.
 - **BR-002-10**: Filters of type `dynamic_kv` **MAY** specify a separate `datasource`; if omitted, the `sqltable` datasource **SHALL** be used.
-- **BR-002-11**: The `sorting_attributes` section **MAY** be defined as a key-value map of column identifiers to sort parameter names.
+- **BR-002-11**: The `sql` property **MUST** end with a deterministic `ORDER BY` clause including a unique tiebreaker column (e.g., the primary key) — look-ahead pagination (BR-004-12–16) is nondeterministic without a total order, and offset paging **MUST NOT** be offered on dashboards whose SQL lacks it. Runtime sort parameters **SHALL NOT** be supported: the SQL template is invariant (BR-004-02), so sort order is fixed per dashboard at definition time.
 - **BR-002-12**: The `masking_rules` section **MAY** be defined per column with a required `strategy` property.
 - **BR-002-13**: Masking strategy **MUST** be one of: `partial_text`, `suffix_only`, `email_mask`, `full_redact`.
 - **BR-002-14**: The `suffix_only` masking strategy **MAY** include a `visible_chars_end` integer property (minimum 0) specifying how many trailing characters remain visible.
@@ -74,6 +74,12 @@ Scenario: Dashboard ID uniqueness enforced
   Given two YAML files exist with the same "dashboard_id" value
   When the backend loads configurations
   Then a conflict error is reported and the duplicate is rejected
+
+Scenario: SQL without deterministic ORDER BY is rejected
+  Given a YAML file whose "sql" lacks an ORDER BY clause ending in a unique tiebreaker column
+  When the backend validates the configuration
+  Then a validation error is raised indicating the missing deterministic ORDER BY (BR-002-11)
+  And the dashboard is not loaded into the cache
 ```
 
 ## 4. Cross-Cutting Concerns Checklist
@@ -94,9 +100,12 @@ Scenario: Dashboard ID uniqueness enforced
 > Per ADR-30: evidence that business rules are satisfied **MUST** be located in the BRD's `logs/` folder
 > (test reports, application logs, implementation plans, decisions).
 
-- Modules (ADR-09/10/11, hexagonal): `platform-domain` (model, `MaskingService`, `DashboardRegistry`,
-  error codes), `platform-infrastructure` (YAML source, JSON meta-schema validator, Git watcher),
-  `reporting-app` (Quarkus: startup validation, file monitoring, datasource mapping).
+- Modules (ADR-09/10/11, hexagonal; module types per the ADR-09 taxonomy): `platform-domain`
+  (**Business System** module — model, `MaskingService`, `DashboardRegistry`, error codes),
+  `platform-infrastructure` (**External System** module — YAML source, JSON meta-schema validator,
+  Git watcher), `container-app` (**Container** module — Quarkus deployment assembly: startup
+  validation, file monitoring, datasource mapping). Library dependencies come from the ADR-09
+  approved catalog only (`exception-library`, `i18n-library`).
 - The JSON meta-schema is the file from section 8, stored at
   `platform-infrastructure/src/main/resources/schema/dashboard-meta-schema.json` and enforced by the
   `networknt` draft-07 validator.
@@ -131,7 +140,7 @@ Scenario: Dashboard ID uniqueness enforced
 - JSON meta-schema for structural validation
 - Column type definitions and format patterns
 - Filter type definitions (date, datetime, boolean, dynamic_kv)
-- Sorting attribute configuration
+- Deterministic ORDER BY requirement in dashboard SQL (pagination correctness, BR-004)
 - Data masking rule definitions and strategies (partial_text, suffix_only, email_mask, full_redact)
 - Git-based file monitoring for configuration changes
 
@@ -227,11 +236,6 @@ filters:
     type: boolean
     required: true
 
-sorting_attributes:
-  id: sort_by_id
-  settlement_date: sort_by_date
-  net_amount: sort_by_amount
-
 masking_rules:
   merchant_name:
     strategy: partial_text
@@ -292,10 +296,6 @@ masking_rules:
         "if": { "properties": { "type": { "const": "dynamic_kv" } } },
         "then": { "required": ["lookup_sql"] }
       }
-    },
-    "sorting_attributes": {
-      "type": "object",
-      "additionalProperties": { "type": "string" }
     },
     "masking_rules": {
       "type": "object",

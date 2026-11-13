@@ -370,8 +370,8 @@ else
   FAIL=1
 fi
 
-# Check Docker Compose for monitoring stack
-COMPOSE_FILE=$(ls docker-compose*.yml docker-compose.yaml compose.yml 2>/dev/null | head -1)
+# Check Docker Compose for monitoring stack (local-env/ per ADR-06 constraint)
+COMPOSE_FILE=$(ls local-env/docker-compose*.yml local-env/docker-compose.yaml local-env/compose.yml docker-compose*.yml docker-compose.yaml compose.yml 2>/dev/null | head -1)
 if [ -n "$COMPOSE_FILE" ]; then
   for service in prometheus grafana; do
     if grep -q "$service" "$COMPOSE_FILE"; then

@@ -14,7 +14,7 @@ This feature defines a single POST endpoint (`/api/dashboards/{dashboardId}/quer
 - **BR-003-04**: The request body **MAY** contain a `filter_inputs` object with key-value pairs matching the dashboard's defined filter names.
 - **BR-003-05**: Filter input values **MUST** be flat primitive types only; nested objects or arrays **SHALL NOT** be accepted.
 - **BR-003-06**: The response **MUST** include `dashboard_id`, `links` (hypermedia navigation), and `items` (array of flat row objects).
-- **BR-003-07**: Hypermedia links **MUST** include a `self` link; `prev` and `next` links **SHALL** be included when applicable based on pagination state.
+- **BR-003-07**: Hypermedia links **MUST** include a `self` link; `prev` and `next` links **SHALL** be included when applicable based on pagination state. Because the endpoint is POST (a link URL cannot carry the request body), `prev`/`next` **MUST** be represented as pagination continuation descriptors — each **MUST** contain `offset`, `limit`, and the endpoint path — which the client submits as the next request body's `offset`/`limit` (filter inputs are re-supplied by the client unchanged).
 - **BR-003-08**: Each row in `items` **MUST** contain only flat primitive values corresponding to the dashboard column definitions.
 - **BR-003-09**: Decimal/monetary values **MUST** be serialized as strings (not floating-point numbers) to prevent IEEE-754 precision loss in browser runtimes.
 - **BR-003-10**: Date-time values **MUST** be serialized in ISO-8601 UTC format (`yyyy-MM-dd'T'HH:mm:ss'Z'`).
@@ -231,8 +231,17 @@ Scenario: Internal error does not leak implementation details
         "required": ["self"],
         "properties": {
           "self": { "type": "string" },
-          "prev": { "type": "string" },
-          "next": { "type": "string" }
+          "prev": { "$ref": "#/components/schemas/PaginationLink" },
+          "next": { "$ref": "#/components/schemas/PaginationLink" }
+        }
+      },
+      "PaginationLink": {
+        "type": "object",
+        "description": "Pagination continuation descriptor for a POST query endpoint (BR-003-07): client re-submits offset/limit with the same filter inputs.",
+        "required": ["offset", "limit"],
+        "properties": {
+          "offset": { "type": "integer", "minimum": 0 },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 100 }
         }
       },
       "Row": {
@@ -260,7 +269,14 @@ Scenario: Internal error does not leak implementation details
           "status": { "type": "integer" },
           "detail": { "type": "string" },
           "instance": { "type": "string" },
-          "timestamp": { "type": "string", "format": "date-time" }
+          "timestamp": { "type": "string", "format": "date-time" },
+          "errorCode": { "type": "string", "description": "ADR-25 [DOMAIN]-[CATEGORY]-[SEQUENCE] error code (ADR-17 registry)" },
+          "correlationId": { "type": "string", "description": "Correlation identifier (ADR-16); also returned as X-Correlation-Id header" },
+          "applicationVersion": { "type": "string" },
+          "retryable": { "type": "boolean" },
+          "remediationSteps": { "type": "array", "items": { "type": "string" } },
+          "traceId": { "type": "string", "description": "OpenTelemetry trace identifier (ADR-21)" },
+          "spanId": { "type": "string", "description": "OpenTelemetry span identifier (ADR-21)" }
         }
       }
     }

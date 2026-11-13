@@ -132,11 +132,11 @@ curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job:
 
 | Criteria | Validation Method | Expected Result |
 |----------|-------------------|------------------|
-| docker-compose.yml Exists | `ls docker-compose*.yml` | File exists |
-| Services Defined | `grep "services:" docker-compose.yml` | Services section present |
-| Health Checks | `grep "healthcheck" docker-compose.yml` | Health checks configured |
-| Volumes Defined | `grep "volumes:" docker-compose.yml` | Persistent volumes |
-| Network Defined | `grep "networks:" docker-compose.yml` | Custom network |
+| docker-compose.yml Exists | `ls local-env/docker-compose*.yml` | File exists (local-env/ per ADR-06) |
+| Services Defined | `grep "services:" local-env/docker-compose.yml` | Services section present |
+| Health Checks | `grep "healthcheck" local-env/docker-compose.yml` | Health checks configured |
+| Volumes Defined | `grep "volumes:" local-env/docker-compose.yml` | Persistent volumes |
+| Network Defined | `grep "networks:" local-env/docker-compose.yml` | Custom network |
 | Services Start | `docker compose up -d` or `docker-compose up -d` | All services running |
 | Services Healthy | `docker compose ps` or `docker-compose ps` | All services healthy |
 | Services Stop | `docker compose down` or `docker-compose down` | Clean shutdown |
@@ -159,8 +159,8 @@ else
 fi
 echo "✅ Docker Compose: $($COMPOSE_CMD version --short) (command: $COMPOSE_CMD)"
 
-# Check for docker-compose file
-COMPOSE_FILE=$(ls docker-compose*.yml docker-compose*.yaml compose.yml compose.yaml 2>/dev/null | head -1)
+# Check for docker-compose file (local-env/ per ADR-06 constraint; root kept for backward compatibility)
+COMPOSE_FILE=$(ls local-env/docker-compose*.yml local-env/docker-compose*.yaml local-env/compose.yml local-env/compose.yaml docker-compose*.yml docker-compose*.yaml compose.yml compose.yaml 2>/dev/null | head -1)
 if [ -n "$COMPOSE_FILE" ]; then
   echo "✅ Docker Compose file found: $COMPOSE_FILE"
 else

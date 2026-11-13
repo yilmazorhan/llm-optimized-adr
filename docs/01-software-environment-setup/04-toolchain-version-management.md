@@ -212,7 +212,7 @@ echo "✅ Infrastructure is ready!"
 
 echo "🎯 Starting Quarkus in development mode..."
 echo "📝 Note: The application will be available at http://localhost:8080"
-echo "📊 Swagger UI will be available at http://localhost:8080/swagger-ui"
+echo "📊 Swagger UI will be available at http://localhost:8080/q/swagger-ui"
 echo "🔍 Health checks available at http://localhost:8080/q/health"
 echo "📈 Metrics available at http://localhost:8080/q/metrics"
 

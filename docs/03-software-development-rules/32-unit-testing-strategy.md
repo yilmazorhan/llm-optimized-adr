@@ -33,7 +33,7 @@ Adopt JUnit 5 (Jupiter) with Mockito and AssertJ as the unit testing stack, with
 - Tests **MUST NOT** be disabled (`@Disabled`) without a tracking identifier in an adjacent comment
 - JaCoCo `check` **MUST** fail the build when domain package line coverage is below 80%
 - The unit test phase per module **SHOULD** complete in under 60 seconds on CI hardware
-- Error path assertions **MUST** verify ADR-17 error codes (e.g., `DOM-001`), not only exception types
+- Error path assertions **MUST** verify ADR-17/ADR-25 error codes (e.g., `USER-BUSINESS-002`), not only exception types
 - Mocks in domain tests **MUST** target port interfaces only (ADR-10, ADR-11)
 
 # Alternatives:
@@ -115,8 +115,8 @@ class UserServiceTest {
             () -> userService.createUser(TestUsers.createJohnCommand())
                               .await().atMost(Duration.ofSeconds(1)));
 
-        // ADR-17: error code MUST be asserted, not only the exception type
-        assertThat(exception.getErrorContext().getErrorCode()).isEqualTo("DOM-001");
+        // ADR-17/ADR-25: error code MUST be asserted, not only the exception type
+        assertThat(exception.getErrorContext().getErrorCode()).isEqualTo("USER-BUSINESS-002");
     }
 }
 ```

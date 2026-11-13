@@ -64,7 +64,7 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import org.junit.jupiter.api.Test;
 
 class HexagonalArchitectureTest {
-    private final JavaClasses importedClasses = new ClassFileImporter().importPackages("com.example");
+    private final JavaClasses importedClasses = new ClassFileImporter().importPackages("com.copilot.quarkus"); // base package per ADR-11
 
     @Test
     void domainShouldNotDependOnAdaptersOrInfrastructure() {

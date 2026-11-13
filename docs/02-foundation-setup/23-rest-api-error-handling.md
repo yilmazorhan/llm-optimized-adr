@@ -163,28 +163,30 @@ public class ProblemDetail {
 @ApplicationScoped
 public class HttpStatusMapper {
     
+    // Canonical error-code grammar: [DOMAIN]-[CATEGORY]-[SEQUENCE] (ADR-25 §Decision).
+    // Prefix-only codes (DOM-xxx/INF-xxx) MUST NOT be used.
     private static final Map<String, Integer> DOMAIN_ERROR_STATUS_MAP = Map.of(
-        "DOM-001", 409, // Conflict - Email already exists
-        "DOM-002", 404, // Not Found - Entity not found
-        "DOM-003", 400, // Bad Request - Validation failure
-        "DOM-004", 422, // Unprocessable Entity - Business state error
-        "DOM-005", 403  // Forbidden - Authorization failure
+        "USER-BUSINESS-002", 409, // Conflict - Email already exists
+        "USER-BUSINESS-004", 404, // Not Found - Entity not found
+        "USER-VALIDATION-001", 400, // Bad Request - Validation failure
+        "USER-BUSINESS-005", 422, // Unprocessable Entity - Business state error
+        "USER-AUTHORIZATION-006", 403  // Forbidden - Authorization failure
     );
-    
+
     private static final Map<String, Integer> INFRASTRUCTURE_ERROR_STATUS_MAP = Map.of(
-        "INF-001", 502, // Bad Gateway - External service failure
-        "INF-002", 503, // Service Unavailable - Database connection failure
-        "INF-003", 504, // Gateway Timeout - External service timeout
-        "INF-004", 500, // Internal Server Error - Configuration issue
-        "INF-005", 503  // Service Unavailable - Circuit breaker open
+        "INFRA-INFRASTRUCTURE-001", 502, // Bad Gateway - External service failure
+        "INFRA-INFRASTRUCTURE-002", 503, // Service Unavailable - Database connection failure
+        "INFRA-INFRASTRUCTURE-003", 504, // Gateway Timeout - External service timeout
+        "INFRA-INFRASTRUCTURE-004", 500, // Internal Server Error - Configuration issue
+        "INFRA-INFRASTRUCTURE-005", 503  // Service Unavailable - Circuit breaker open
     );
-    
+
     private static final Map<String, String> ERROR_TITLE_MAP = Map.of(
-        "DOM-001", "Business Rule Violation",
-        "DOM-002", "Resource Not Found", 
-        "DOM-003", "Validation Error",
-        "INF-001", "External Service Error",
-        "INF-002", "Database Connection Error"
+        "USER-BUSINESS-002", "Business Rule Violation",
+        "USER-BUSINESS-004", "Resource Not Found",
+        "USER-VALIDATION-001", "Validation Error",
+        "INFRA-INFRASTRUCTURE-001", "External Service Error",
+        "INFRA-INFRASTRUCTURE-002", "Database Connection Error"
     );
     
     public int mapDomainException(DomainException exception) {
@@ -200,9 +202,9 @@ public class HttpStatusMapper {
     }
     
     public boolean isRetryable(String errorCode) {
-        return errorCode.startsWith("INF-002") || // Database connection issues
-               errorCode.startsWith("INF-003") || // Timeout issues
-               errorCode.startsWith("INF-005");   // Circuit breaker temporary failures
+        return errorCode.startsWith("INFRA-INFRASTRUCTURE-002") || // Database connection issues
+               errorCode.startsWith("INFRA-INFRASTRUCTURE-003") || // Timeout issues
+               errorCode.startsWith("INFRA-INFRASTRUCTURE-005");   // Circuit breaker temporary failures
     }
 }
 ```
@@ -487,9 +489,9 @@ public class StructuredErrorLogger {
     
     private List<String> extractRemediationSteps(String errorCode) {
         return switch (errorCode) {
-            case "DOM-001" -> List.of("Use a different email address", "Contact support if this is unexpected");
-            case "DOM-002" -> List.of("Verify the resource ID", "Check if the resource was recently deleted");
-            case "INF-001" -> List.of("Try again in a few moments", "Contact support if the issue persists");
+            case "USER-BUSINESS-002" -> List.of("Use a different email address", "Contact support if this is unexpected");
+            case "USER-BUSINESS-004" -> List.of("Verify the resource ID", "Check if the resource was recently deleted");
+            case "INFRA-INFRASTRUCTURE-001" -> List.of("Try again in a few moments", "Contact support if the issue persists");
             default -> List.of("Contact technical support for assistance");
         };
     }
@@ -543,9 +545,9 @@ quarkus.http.header."X-Content-Type-Options".value=nosniff
 quarkus.http.header."X-Frame-Options".value=DENY
 quarkus.http.header."Cache-Control".value=no-cache, no-store, max-age=0
 
-# OpenTelemetry Integration
-quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://jaeger:14250
-quarkus.opentelemetry.tracer.exporter.otlp.headers=Authorization=Bearer ${TRACING_TOKEN:}
+# OpenTelemetry Integration (Quarkus 3.x quarkus.otel.* form — ADR-21 is canonical)
+quarkus.otel.exporter.otlp.traces.endpoint=${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+quarkus.otel.exporter.otlp.traces.protocol=grpc
 
 # Structured Logging
 quarkus.log.level=INFO

@@ -27,10 +27,9 @@ quarkus.application.version=${project.version:1.0.0-SNAPSHOT}
 quarkus.locales=en,es,fr,de
 quarkus.default-locale=en
 
-# Database Configuration
-# datasource.host=${DB_HOST:localhost}
-# datasource.port=${DB_PORT:5432}
-# datasource.database=${DB_NAME:demo}
+# Database Configuration (Oracle — production database kind per BR-001/ADR-14)
+# quarkus.datasource.db-kind=oracle
+# quarkus.datasource.jdbc.url=${DB_URL:jdbc:oracle:thin:@${DB_HOST:localhost}:${DB_PORT:1521}/${DB_SERVICE:XEPDB1}}
 # datasource.username=${DB_USER:demo}
 # datasource.password=${DB_PASSWORD:demo}
 
@@ -47,10 +46,9 @@ quarkus.http.header."X-XSS-Protection".value=1; mode=block
 quarkus.http.header."Referrer-Policy".value=strict-origin-when-cross-origin
 quarkus.http.header."Content-Security-Policy".value=default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'
 
-# OpenAPI/Swagger
-quarkus.smallrye-openapi.path=/openapi
+# OpenAPI/Swagger (Quarkus default paths: /q/openapi, /q/swagger-ui — do NOT override;
+# ADR-06/08/27 access points and validation scripts rely on the defaults)
 quarkus.swagger-ui.always-include=true
-quarkus.swagger-ui.path=/swagger-ui
 
 # Logging Configuration
 quarkus.log.level=${LOG_LEVEL:INFO}
@@ -72,8 +70,10 @@ quarkus.security.users.embedded.enabled=${BASIC_AUTH_ENABLED:true}
 quarkus.security.users.embedded.plain-text=true
 quarkus.security.users.embedded.users.admin=${ADMIN_USER:admin}
 quarkus.security.users.embedded.roles.admin=ADMIN,USER
-mp.jwt.verify.publickey.location=${JWT_PUBLIC_KEY:META-INF/resources/publicKey.pem}
+mp.jwt.verify.publickey.location=${JWT_PUBLIC_KEY_LOCATION:META-INF/resources/publicKey.pem}
 mp.jwt.verify.issuer=${JWT_ISSUER:https://demo-app}
+# JWT signing key: runtime injection only — see ADR-18 (no bundled private key material)
+smallrye.jwt.sign.key=${JWT_SIGNING_KEY}
 
 # Rate Limiting
 app.security.rate-limit.enabled=${RATE_LIMIT_ENABLED:true}
@@ -101,6 +101,7 @@ app.security.rate-limit.window-duration=${RATE_LIMIT_WINDOW:PT1M}
 ```bash
 # Security
 JWT_ISSUER=https://your-domain.com
+JWT_SIGNING_KEY=<PKCS#8 PEM content — from Kubernetes Secret/Vault; NEVER a file in the repository (ADR-18)>
 ADMIN_USER=admin
 
 # Observability  
@@ -168,8 +169,9 @@ Quarkus MicroProfile Config resolves properties in a defined ordinal hierarchy: 
 
 ### Required for Production:
 ```bash
-# Security Configuration  
+# Security Configuration
 export JWT_ISSUER=https://your-production-domain.com
+export JWT_SIGNING_KEY=<PKCS#8 PEM content — from Kubernetes Secret/Vault; never committed (ADR-18)>
 export ADMIN_USER=production_admin
 
 # Observability

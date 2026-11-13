@@ -80,7 +80,7 @@ Before generating production artifacts, the following services **MUST** be runni
 
 **Alternative (Offline Mode)**: For environments where running services is not possible:
 - **OpenAPI**: Use Maven plugin generation: `./mvnw compile quarkus:generate-code -pl container-app`
-- **Dashboards**: Copy from provisioned directory: `monitoring/grafana/dashboards/`
+- **Dashboards**: Copy from provisioned directory: `local-env/grafana/dashboards/` (ADR-06/ADR-22)
 
 ## 1. Application Docker Image (with Tests)
 
@@ -174,11 +174,11 @@ COPY scripts/ /flyway/scripts/
 # Make scripts executable
 RUN chmod +x /flyway/scripts/*.sh
 
-# Environment variables for database connection
-ENV FLYWAY_URL=jdbc:postgresql://localhost:5432/demo
+# Environment variables for database connection (Oracle — production database kind per BR-001/ADR-14)
+ENV FLYWAY_URL=jdbc:oracle:thin:@localhost:1521/XEPDB1
 ENV FLYWAY_USER=demo
 ENV FLYWAY_PASSWORD=demo
-ENV FLYWAY_SCHEMAS=demo
+ENV FLYWAY_SCHEMAS=DEMO
 ENV FLYWAY_LOCATIONS=filesystem:/flyway/sql
 ENV FLYWAY_BASELINE_ON_MIGRATE=true
 ENV FLYWAY_VALIDATE_ON_MIGRATE=true
@@ -253,38 +253,41 @@ flyway.outOfOrder=false
 flyway.cleanDisabled=true
 ```
 
-**Sample Migration** (`sql/V1.0.0__initial_schema.sql`):
+**Sample Migration** (`sql/V1.0.0__initial_schema.sql`, Oracle dialect):
 ```sql
--- V1.0.0: Initial schema for audit events
+-- V1.0.0: Initial schema for audit events (Oracle — production dialect per BR-001/ADR-14)
+-- event_data is stored as VARCHAR2 containing serialized JSON: BR-004-04 type
+-- enforcement guard rejects JSON/JSONB (Types.OTHER) columns, so complex types
+-- MUST NOT appear in queryable tables (see BR-002/BR-004).
 
-CREATE TABLE IF NOT EXISTS audit_events (
-    event_id UUID DEFAULT gen_random_uuid(),
-    timestamp TIMESTAMPTZ(3) DEFAULT now(),
+CREATE TABLE audit_events (
+    event_id VARCHAR2(36) DEFAULT SYS_GUID(),
+    timestamp TIMESTAMP(3) DEFAULT SYSTIMESTAMP,
     
     -- Service context
-    service_name VARCHAR(100) NOT NULL,
-    service_version VARCHAR(50) NOT NULL,
+    service_name VARCHAR2(100) NOT NULL,
+    service_version VARCHAR2(50) NOT NULL,
     
     -- Event classification
-    event_name VARCHAR(100) NOT NULL,
-    event_category VARCHAR(50) NOT NULL,
-    outcome VARCHAR(10) NOT NULL CHECK (outcome IN ('SUCCESS', 'FAILURE')),
+    event_name VARCHAR2(100) NOT NULL,
+    event_category VARCHAR2(50) NOT NULL,
+    outcome VARCHAR2(10) NOT NULL CHECK (outcome IN ('SUCCESS', 'FAILURE')),
     
     -- Correlation
-    correlation_id VARCHAR(255),
-    trace_id VARCHAR(255),
-    span_id VARCHAR(255),
+    correlation_id VARCHAR2(255),
+    trace_id VARCHAR2(255),
+    span_id VARCHAR2(255),
     
     -- Actor information
-    actor_type VARCHAR(20) NOT NULL CHECK (actor_type IN ('USER', 'SYSTEM', 'API_KEY')),
-    actor_id VARCHAR(255),
+    actor_type VARCHAR2(20) NOT NULL CHECK (actor_type IN ('USER', 'SYSTEM', 'API_KEY')),
+    actor_id VARCHAR2(255),
     
     -- Resource information
-    resource_type VARCHAR(100),
-    resource_id VARCHAR(255),
+    resource_type VARCHAR2(100),
+    resource_id VARCHAR2(255),
     
-    -- Event data
-    event_data JSONB
+    -- Event data (serialized JSON text — scalar column per BR-004 type guard)
+    event_data CLOB
 );
 
 CREATE INDEX idx_audit_events_timestamp ON audit_events (timestamp);
@@ -325,9 +328,9 @@ for dashboard in "${DASHBOARDS[@]}"; do
         | jq '.dashboard' > "${OUTPUT_DIR}/${dashboard}.json"
 done
 
-# Also copy static provisioning dashboards
-if [ -d "monitoring/grafana/dashboards" ]; then
-    cp monitoring/grafana/dashboards/*.json "$OUTPUT_DIR/" 2>/dev/null || true
+# Also copy static provisioning dashboards (local-env/ per ADR-06/ADR-22 constraint)
+if [ -d "local-env/grafana/dashboards" ]; then
+    cp local-env/grafana/dashboards/*.json "$OUTPUT_DIR/" 2>/dev/null || true
 fi
 
 echo "✅ Dashboards exported to: $OUTPUT_DIR"
@@ -384,7 +387,8 @@ Generate comprehensive error code documentation from codebase analysis.
 set -e
 
 OUTPUT_FILE="${1:-build/ERROR_INVENTORY.md}"
-SOURCE_DIRS="container-app/src exception-library/src platform-api/src"
+# Source modules per ADR-09 taxonomy (BR-002 reporting engine + platform libraries)
+SOURCE_DIRS="container-app/src platform-domain/src platform-infrastructure/src exception-library/src"
 
 echo "📋 Generating Error Inventory..."
 
@@ -414,9 +418,10 @@ Error codes follow the pattern: `[DOMAIN]-[CATEGORY]-[SEQUENCE]`
 |------|-------------|-------|-------------|-----------|-------------|
 EOF
 
-# Extract error codes from HttpStatusMapper and exception classes
-grep -rh "DOM-[0-9]\{3\}" $SOURCE_DIRS 2>/dev/null | \
-    grep -oE '"DOM-[0-9]{3}"' | sort -u | \
+# Extract error codes from HttpStatusMapper and exception classes.
+# Canonical grammar: [DOMAIN]-[CATEGORY]-[SEQUENCE] (ADR-25 §Decision).
+grep -rhE '"[A-Z]+-(BUSINESS|VALIDATION|WORKFLOW|AUTHORIZATION)-[0-9]{3}"' $SOURCE_DIRS 2>/dev/null | \
+    grep -oE '"[A-Z]+-(BUSINESS|VALIDATION|WORKFLOW|AUTHORIZATION)-[0-9]{3}"' | sort -u | \
     while read code; do
         echo "| $code | - | - | - | No | - |"
     done >> "$OUTPUT_FILE"
@@ -429,8 +434,8 @@ cat >> "$OUTPUT_FILE" << 'EOF'
 |------|-------------|-------|-------------|-----------|-------------|
 EOF
 
-grep -rh "INF-[0-9]\{3\}" $SOURCE_DIRS 2>/dev/null | \
-    grep -oE '"INF-[0-9]{3}"' | sort -u | \
+grep -rhE '"[A-Z]+-INFRASTRUCTURE-[0-9]{3}"' $SOURCE_DIRS 2>/dev/null | \
+    grep -oE '"[A-Z]+-INFRASTRUCTURE-[0-9]{3}"' | sort -u | \
     while read code; do
         echo "| $code | - | - | - | Yes | - |"
     done >> "$OUTPUT_FILE"
@@ -460,15 +465,15 @@ cat >> "$OUTPUT_FILE" << 'EOF'
 
 ### Common Error Patterns
 
-1. **DOM-001 (Email Already Exists)**
+1. **USER-BUSINESS-002 (Email Already Exists)**
    - **Cause**: Attempting to create a user with an email that already exists
    - **Resolution**: Use a different email address or retrieve the existing user
 
-2. **DOM-002 (Entity Not Found)**
+2. **USER-BUSINESS-004 (Entity Not Found)**
    - **Cause**: Requested resource ID does not exist in the system
    - **Resolution**: Verify the ID and check if the resource was deleted
 
-3. **INF-001 (External Service Error)**
+3. **INFRA-INFRASTRUCTURE-001 (External Service Error)**
    - **Cause**: Downstream service is unavailable or returned an error
    - **Resolution**: Retry after 30 seconds; check service health
 
@@ -498,43 +503,43 @@ This document provides a comprehensive inventory of all error codes generated by
 
 ---
 
-## Domain Errors (DOM-XXX)
+## Domain Errors ([DOMAIN]-[CATEGORY]-[SEQUENCE])
 
 Domain errors represent business rule violations and are typically not retryable.
 
 | Code | HTTP Status | Title | Description | Retryable |
 |------|-------------|-------|-------------|-----------|
-| DOM-001 | 409 | Email Already Exists | The email address is already registered | No |
-| DOM-002 | 404 | Entity Not Found | The requested resource does not exist | No |
-| DOM-003 | 400 | Validation Error | Input data failed validation | No |
-| DOM-004 | 422 | Invalid Business State | Operation not allowed in current state | No |
-| DOM-005 | 403 | Authorization Failure | Insufficient permissions | No |
+| USER-BUSINESS-002 | 409 | Email Already Exists | The email address is already registered | No |
+| USER-BUSINESS-004 | 404 | Entity Not Found | The requested resource does not exist | No |
+| USER-VALIDATION-001 | 400 | Validation Error | Input data failed validation | No |
+| USER-BUSINESS-005 | 422 | Invalid Business State | Operation not allowed in current state | No |
+| USER-AUTHORIZATION-006 | 403 | Authorization Failure | Insufficient permissions | No |
 
 ### Remediation Steps
 
-#### DOM-001: Email Already Exists
+#### USER-BUSINESS-002: Email Already Exists
 - Use a different email address
 - If you already have an account, use the login endpoint
 - Contact support if you believe this is an error
 
-#### DOM-002: Entity Not Found
+#### USER-BUSINESS-004: Entity Not Found
 - Verify the resource ID is correct
 - Check if the resource was recently deleted
 - Use the list endpoint to find available resources
 
 ---
 
-## Infrastructure Errors (INF-XXX)
+## Infrastructure Errors ([DOMAIN]-INFRASTRUCTURE-[SEQUENCE])
 
 Infrastructure errors represent technical failures and may be retryable.
 
 | Code | HTTP Status | Title | Description | Retryable | Retry-After |
 |------|-------------|-------|-------------|-----------|-------------|
-| INF-001 | 502 | External Service Error | Downstream service unavailable | Yes | 30s |
-| INF-002 | 503 | Database Connection Error | Database connection failed | Yes | 30s |
-| INF-003 | 504 | Gateway Timeout | External service timeout | Yes | 60s |
-| INF-004 | 500 | Configuration Error | Application misconfiguration | No | - |
-| INF-005 | 503 | Circuit Breaker Open | Service temporarily unavailable | Yes | 30s |
+| INFRA-INFRASTRUCTURE-001 | 502 | External Service Error | Downstream service unavailable | Yes | 30s |
+| INFRA-INFRASTRUCTURE-002 | 503 | Database Connection Error | Database connection failed | Yes | 30s |
+| INFRA-INFRASTRUCTURE-003 | 504 | Gateway Timeout | External service timeout | Yes | 60s |
+| INFRA-INFRASTRUCTURE-004 | 500 | Configuration Error | Application misconfiguration | No | - |
+| INFRA-INFRASTRUCTURE-005 | 503 | Circuit Breaker Open | Service temporarily unavailable | Yes | 30s |
 
 ---
 
@@ -542,12 +547,12 @@ Infrastructure errors represent technical failures and may be retryable.
 
 ```json
 {
-  "type": "https://api.copilot-quarkus.com/problems/DOM-001",
+  "type": "https://api.copilot-quarkus.com/problems/USER-BUSINESS-002",
   "title": "Email Already Exists",
   "status": 409,
   "detail": "The email address 'user@example.com' is already registered",
   "instance": "CORR-ABC123",
-  "errorCode": "DOM-001",
+  "errorCode": "USER-BUSINESS-002",
   "correlationId": "CORR-ABC123",
   "timestamp": "2026-01-27T10:00:00.000Z",
   "retryable": false,
@@ -573,8 +578,7 @@ Generate OpenAPI specification from application annotations.
 
 **OpenAPI Generation Configuration** (`application.properties`):
 ```properties
-# OpenAPI Configuration
-quarkus.smallrye-openapi.path=/openapi
+# OpenAPI Configuration (default path /q/openapi — see ADR-15)
 quarkus.smallrye-openapi.info-title=Copilot Quarkus API
 quarkus.smallrye-openapi.info-version=${quarkus.application.version}
 quarkus.smallrye-openapi.info-description=Cloud-native microservices API
@@ -790,7 +794,7 @@ docker images | grep copilot-quarkus
 
 # Test migration container
 docker run --rm copilot-quarkus-migrations:latest \
-  -url=jdbc:postgresql://host:5432/demo \
+  -url=jdbc:oracle:thin:@host:1521/XEPDB1 \
   -user=demo -password=demo \
   info
 

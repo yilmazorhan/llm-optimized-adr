@@ -8,6 +8,7 @@ Implement comprehensive OWASP Top 10 security using Quarkus Security with reacti
 
 **Required Components**:
 - JWT authentication with RS256 (RSA-2048 keys)
+- Externalized key and secret management: signing keys **MUST** be injected at runtime from external secret sources (environment variables, Kubernetes Secrets, or Vault) — private key material **MUST NOT** be committed to version control or bundled into application artifacts
 - Role-based access control with least privilege
 - Comprehensive input validation and sanitization
 - AES-256-GCM encryption for sensitive data
@@ -34,6 +35,8 @@ Implement comprehensive OWASP Top 10 security using Quarkus Security with reacti
 - Security enforcement **MUST** occur at adapter boundaries only
 - Environment-specific security configuration **MUST** be externalized via environment variables (see ADR-15)
 - Key rotation **MUST** be supported without application restarts
+- JWT signing keys and all private key material **MUST NOT** be committed to version control or packaged inside application artifacts (`src/main/resources`, Docker image layers); they **MUST** be injected at runtime from external secret sources — environment variables, Kubernetes Secrets, or Vault (ADR-15). OWASP A02 classifies hard-coded/committed cryptographic secrets as a top cryptographic-failure category (https://owasp.org/Top10/A02_2021-Cryptographic_Failures/)
+- The JWT **verification public key** **MAY** remain bundled in the artifact (public material, verification only); the **signing private key** **MUST NOT**
 
 # Alternatives:
 
@@ -49,27 +52,47 @@ Quarkus Security resolves `@RolesAllowed`, `@Authenticated`, and `@PermitAll` an
 
 ## 1. JWT Authentication Infrastructure
 
-**RSA Key Generation**:
-```bash
-# Generate RSA-2048 private key
-openssl genpkey -algorithm RSA -out private.pem -pkcs8 -outform PEM -pkeyopt rsa_keygen_bits:2048
-openssl rsa -in private.pem -pubout -out public.pem
+> [!IMPORTANT]
+> **Private key material MUST NEVER enter the repository or the application artifact.**
+> The pattern of copying `privateKey.pem` into `src/main/resources/` is **PROHIBITED**: it commits
+> the signing key to version control and ships it inside every Docker image layer — an OWASP A02
+> cryptographic failure. Keys are generated **outside** the project tree and injected at runtime
+> via environment variables or Kubernetes Secrets.
 
-# Place keys
+**RSA Key Generation (outside the project tree)**:
+```bash
+# Generate RSA-2048 private key in an external secrets directory — NOT in the project
+mkdir -p ~/secrets/copilot-quarkus   # or your organization's secret store staging area
+openssl genpkey -algorithm RSA -out ~/secrets/copilot-quarkus/private.pem \
+  -pkcs8 -outform PEM -pkeyopt rsa_keygen_bits:2048
+openssl rsa -in ~/secrets/copilot-quarkus/private.pem -pubout -out public.pem
+chmod 600 ~/secrets/copilot-quarkus/private.pem
+
+# Public key: MAY be committed (verification material only)
 mkdir -p src/main/resources/META-INF/resources/
-cp private.pem src/main/resources/META-INF/resources/privateKey.pem
 cp public.pem src/main/resources/META-INF/resources/publicKey.pem
 
-# Verify
-openssl rsa -in src/main/resources/META-INF/resources/privateKey.pem -check -noout
+# Private key: inject as an environment variable (never a file in the project)
+#export JWT_SIGNING_KEY=$(cat ~/secrets/copilot-quarkus/private.pem)
+#   ...or store as a Kubernetes Secret / Vault KV entry; see "Secret Distribution" below
+
+# Verify (from the external location, not from the project)
+openssl rsa -in ~/secrets/copilot-quarkus/private.pem -check -noout
 ```
 
-**Application Configuration**:
+**Application Configuration** (`${VAR:default}` substitution per ADR-15):
 ```properties
 # JWT Security
-mp.jwt.verify.publickey.location=META-INF/resources/publicKey.pem
-mp.jwt.verify.issuer=https://copilot-quarkus-demo
-smallrye.jwt.sign.key.location=META-INF/resources/privateKey.pem
+# Verification public key: public material, MAY be bundled
+mp.jwt.verify.publickey.location=${JWT_PUBLIC_KEY_LOCATION:META-INF/resources/publicKey.pem}
+mp.jwt.verify.issuer=${JWT_ISSUER:https://copilot-quarkus-demo}
+
+# Signing private key: MUST be injected at runtime — env var / K8s Secret / Vault.
+# There is NO bundled fallback: the default names the external source.
+# Mechanism 1 (inline key from environment variable — documented inline-key property):
+smallrye.jwt.sign.key=${JWT_SIGNING_KEY}
+# Mechanism 2 (file path — e.g., Kubernetes Secret volume-mounted at /var/run/secrets/jwt/):
+#smallrye.jwt.sign.key.location=${JWT_SIGNING_KEY_FILE:/var/run/secrets/jwt/private.pem}
 
 # Security Headers
 quarkus.http.header."X-Content-Type-Options".value=nosniff
@@ -78,11 +101,20 @@ quarkus.http.header."X-XSS-Protection".value=1; mode=block
 quarkus.http.header."Strict-Transport-Security".value=max-age=31536000; includeSubDomains
 quarkus.http.insecure-requests=disabled
 
-# OpenAPI Security
-quarkus.smallrye-openapi.path=/openapi
+# OpenAPI Security (default Quarkus paths /q/openapi, /q/swagger-ui — see ADR-15)
 quarkus.swagger-ui.always-include=true
-quarkus.swagger-ui.path=/swagger-ui
 ```
+
+**Secret Distribution (per environment)**:
+
+| Environment | Mechanism | Notes |
+|-------------|-----------|-------|
+| Local development | Environment variable or file **outside the repository tree** (e.g., `~/secrets/…`) | `JWT_SIGNING_KEY` (inline PEM) or `JWT_SIGNING_KEY_FILE` (path); **MUST NOT** be a `.env` file committed to version control — add secret files to `.gitignore` |
+| CI/CD | Pipeline secret store (GitHub Actions Secrets, GitLab CI variables) | Injected as masked environment variables at job runtime |
+| Kubernetes (production) | Kubernetes Secret **volume-mounted** as a file | `smallrye.jwt.sign.key.location` points at the mounted path (e.g., `/var/run/secrets/jwt/private.pem`); the Secret object itself is managed outside the application repository |
+| Vault (optional) | `quarkus-vault` extension | See ADR-15 recommendation for production secrets |
+
+**Key Rotation**: mounting the signing key from an externally managed Secret (volume or env var) allows key replacement without rebuilding the artifact — restart-free rotation is completed by publishing the new public key to `mp.jwt.verify.publickey.location` (URL/JWKS endpoint), per the SmallRye JWT key-location documentation (https://quarkus.io/guides/security-jwt).
 
 **Naming Conventions**:
 - Controllers: `[Domain]SecurityController`
@@ -370,7 +402,7 @@ public class CryptographicService {
 @ApplicationScoped
 public class CryptographicException extends InfrastructureException {
     public CryptographicException(String message, Throwable cause) {
-        super("SEC-001", "Cryptographic", message, cause);
+        super("SECURITY-INFRASTRUCTURE-001", "Cryptographic", message, cause);
     }
 }
 ```
@@ -501,7 +533,7 @@ curl -H "Authorization: Bearer $TOKEN" "http://localhost:8080/api/v1/users"
 
 # Security validation
 ./mvnw org.owasp:dependency-check-maven:check
-curl "http://localhost:8080/openapi" | jq '.components.securitySchemes'
+curl "http://localhost:8080/q/openapi" | jq '.components.securitySchemes'
 
 # Input validation testing
 curl -X POST "http://localhost:8080/api/v1/users" \
@@ -533,6 +565,10 @@ curl -X POST "http://localhost:8080/api/v1/users" \
 | Security Headers | Response headers | X-Content-Type-Options, etc. |
 | Rate Limiting | Configuration/code | Rate limiting implemented |
 | Input Validation | Code inspection | Bean Validation on endpoints |
+| **No Private Key in Source Tree** | `find . -path ./target -prune -o -name "*.pem" -print \| grep -v publicKey.pem` | Zero private key files (only `publicKey.pem` allowed) |
+| **No Private Key Material in Code/Config** | `grep -rn "BEGIN PRIVATE KEY\|BEGIN RSA PRIVATE KEY" */src .gitignore` | Zero matches |
+| **Signing Key Runtime-Injected** | `grep "smallrye.jwt.sign.key" application.properties` | Resolves from `${JWT_SIGNING_KEY}` / `${JWT_SIGNING_KEY_FILE}` — no bundled path default |
+| **Secrets Gitignored** | `grep -E "secrets|\.pem|\.env" .gitignore` | Private key/secret patterns ignored |
 | Security Tests | `./mvnw test -Dtest=*Security*` | All tests pass |
 | Build Success | `./mvnw clean verify` | Exit code 0 |
 
@@ -543,6 +579,36 @@ set -e
 echo "Validating Security Implementation (OWASP)..."
 
 FAIL=0
+
+# CRITICAL (S-1): private key material MUST NOT be committed or bundled.
+# Only publicKey.pem may exist in source trees; no private key text anywhere.
+PRIVATE_KEY_FILES=$(find . -path ./target -prune -o -name "*.pem" -print 2>/dev/null \
+  | grep -v "publicKey.pem" | wc -l | tr -d ' ')
+if [ "$PRIVATE_KEY_FILES" -eq 0 ]; then
+  echo "✅ No private key files in project tree"
+else
+  echo "❌ VIOLATION (OWASP A02): private key file(s) found in project tree:"
+  find . -path ./target -prune -o -name "*.pem" -print 2>/dev/null | grep -v "publicKey.pem"
+  FAIL=1
+fi
+
+KEY_MATERIAL=$(grep -rln "BEGIN PRIVATE KEY\|BEGIN RSA PRIVATE KEY\|BEGIN EC PRIVATE KEY" \
+  */src 2>/dev/null | wc -l | tr -d ' ')
+if [ "$KEY_MATERIAL" -eq 0 ]; then
+  echo "✅ No private key material in source/config"
+else
+  echo "❌ VIOLATION (OWASP A02): private key material embedded in source or config files"
+  FAIL=1
+fi
+
+# Signing key MUST be runtime-injected (no bundled-path default)
+if grep -rq "smallrye.jwt.sign.key.location=.*META-INF\|smallrye.jwt.sign.key.location=.*src/main" \
+  */src/main/resources/application*.properties 2>/dev/null; then
+  echo "❌ VIOLATION: signing key location points into the artifact (must be runtime-injected)"
+  FAIL=1
+else
+  echo "✅ JWT signing key is runtime-injected"
+fi
 
 # Check for security extensions
 SECURITY_FOUND=0

@@ -46,7 +46,7 @@ Hexagonal package structure maps directly to ArchUnit dependency rules: `noClass
 ## Package Structure:
 
 ```
-com.example.
+com.copilot.quarkus.
 ├── domain/
 │   └── {bounded-context}/          # e.g., user, order, product
 │       ├── model/                  # Domain entities and value objects
@@ -93,7 +93,7 @@ All library modules (non-application modules) **MUST** include the `jandex-maven
 </plugin>
 ```
 
-**Applies to**: `exception-library`, `i18n-library`, `platform-api`, `platform-infrastructure` — every module except the final `container-app` (which is the Quarkus application entry point and is indexed automatically).
+**Applies to**: every module except the final `container-app` (which is the Quarkus application entry point and is indexed automatically) — all ADR-09 approved libraries (`exception-library`, `i18n-library`, `validation-library`, `security-library`, `date-time-library`) and all Business/External System modules (e.g., `platform-domain`, `platform-infrastructure` per BR-002).
 
 ## Naming Conventions:
 - **Entities**: `User.java`, `Order.java` (singular, PascalCase)
@@ -105,9 +105,9 @@ All library modules (non-application modules) **MUST** include the `jandex-maven
 - **Exceptions**: `UserNotFoundException.java`, `InvalidEmailException.java` (descriptive + "Exception")
 
 ## Code Generation Guidelines:
-1. Domain entities: `com.example.domain.{context}.model`
-2. Repository ports: `com.example.domain.{context}.port`
-3. REST controllers: `com.example.infrastructure.web.controller`
+1. Domain entities: `com.copilot.quarkus.domain.{context}.model`
+2. Repository ports: `com.copilot.quarkus.domain.{context}.port`
+3. REST controllers: `com.copilot.quarkus.infrastructure.web.controller`
 4. Consistent naming: Entity + Port/Adapter/Service/Controller suffix
 5. Dependency compliance: Never import infrastructure packages in domain
 

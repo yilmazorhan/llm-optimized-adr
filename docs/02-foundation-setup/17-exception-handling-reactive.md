@@ -35,7 +35,7 @@ Implement reactive-first exception handling with structured error context using 
 - All exception handling **MUST** be compatible with GraalVM native compilation
 - Error context objects **MUST** be registered for reflection in native builds via `@RegisterForReflection`
 - Throwing `new RuntimeException(...)` or `new Exception(...)` directly **MUST NOT** appear in production code
-- All custom exceptions **MUST** carry unique, documented error codes (e.g., `DOM-001`, `INF-001`, `AUD-001`)
+- All custom exceptions **MUST** carry unique, documented error codes following the single canonical grammar `[DOMAIN]-[CATEGORY]-[SEQUENCE]` (ADR-25 §Decision) — e.g., `USER-BUSINESS-002`, `USER-VALIDATION-001`, `USER-INFRASTRUCTURE-005`. Prefix-only codes (`DOM-001`, `INF-001`, `AUD-001`, `SEC-001`) **MUST NOT** be used.
 - All exceptions **MUST** include operation context, correlation ID, and sufficient details for debugging
 
 
@@ -58,7 +58,7 @@ Mutiny’s `Uni.onFailure()` and `Multi.onFailure()` operators propagate excepti
 1. **No Raw RuntimeException**: Throwing `new RuntimeException(...)` is **STRICTLY PROHIBITED**. All exceptions **MUST** be wrapped in domain-specific or infrastructure-specific exception types.
 2. **No Generic Exception**: Throwing `new Exception(...)` or catching generic `Exception` without re-wrapping is **PROHIBITED**.
 3. **Layer-Appropriate Exceptions**: Domain layer **MUST** throw `DomainException` subclasses. Infrastructure layer **MUST** throw `InfrastructureException` subclasses.
-4. **Meaningful Error Codes**: All custom exceptions **MUST** have unique, documented error codes (e.g., `DOM-001`, `INF-001`, `AUD-001`).
+4. **Meaningful Error Codes**: All custom exceptions **MUST** have unique, documented error codes following `[DOMAIN]-[CATEGORY]-[SEQUENCE]` (e.g., `USER-BUSINESS-002`, `USER-VALIDATION-001`, `AUDIT-INFRASTRUCTURE-001`).
 5. **Exception Context Required**: All exceptions **MUST** include operation context, correlation ID, and sufficient details for debugging.
 
 ## Pre-Implementation Checklist
@@ -68,7 +68,7 @@ Mutiny’s `Uni.onFailure()` and `Multi.onFailure()` operators propagate excepti
 - [ ] **Never throw RuntimeException** — create a specific exception class instead
 - [ ] **Check existing exception types** — review if an appropriate exception already exists
 - [ ] **Create domain-specific exception** — extend `DomainException` or `InfrastructureException`
-- [ ] **Include error code** — add unique code like `AUD-001`, `INF-002`
+- [ ] **Include error code** — add unique code like `AUDIT-INFRASTRUCTURE-001`, `INFRA-INFRASTRUCTURE-002`
 - [ ] **Add context** — include relevant IDs, operation name, and failure reason
 - [ ] **Document in error registry** — add new exception to centralized error documentation
 
@@ -106,7 +106,7 @@ public abstract class DomainException extends RuntimeException {
 // Business Rule Violations
 public class UserEmailAlreadyExistsException extends DomainException {
     public UserEmailAlreadyExistsException(String email) {
-        super("DOM-001", "CreateUser", 
+        super("USER-BUSINESS-002", "CreateUser",
               String.format("Email '%s' already exists in system", email),
               Map.of("email", email, "suggestion", "Use different email or retrieve existing user"));
     }
@@ -115,7 +115,7 @@ public class UserEmailAlreadyExistsException extends DomainException {
 // Entity Not Found
 public class EntityNotFoundException extends DomainException {
     public EntityNotFoundException(String entityType, String entityId) {
-        super("DOM-002", "FindEntity",
+        super("USER-BUSINESS-004", "FindEntity",
               String.format("%s with ID '%s' not found", entityType, entityId),
               Map.of("entityType", entityType, "entityId", entityId));
     }
@@ -143,7 +143,7 @@ public abstract class InfrastructureException extends RuntimeException {
 // Database Adapter Exceptions
 public class DatabaseConnectionException extends InfrastructureException {
     public DatabaseConnectionException(String operation, SQLException cause) {
-        super("INF-001", operation, 
+        super("INFRA-INFRASTRUCTURE-001", operation,
               String.format("Database connection failed: %s", cause.getMessage()), cause);
     }
 }
@@ -151,7 +151,7 @@ public class DatabaseConnectionException extends InfrastructureException {
 // External Service Exceptions  
 public class ExternalServiceException extends InfrastructureException {
     public ExternalServiceException(String serviceName, String operation, Exception cause) {
-        super("INF-002", operation,
+        super("INFRA-INFRASTRUCTURE-002", operation,
               String.format("External service '%s' unavailable: %s", serviceName, cause.getMessage()), cause);
     }
 }
@@ -159,12 +159,12 @@ public class ExternalServiceException extends InfrastructureException {
 // Audit Persistence Exceptions
 public class AuditPersistenceException extends InfrastructureException {
     public AuditPersistenceException(String operation, UUID eventId, SQLException cause) {
-        super("AUD-001", operation,
+        super("AUDIT-INFRASTRUCTURE-001", operation,
               String.format("Audit persistence failed for event '%s': %s", eventId, cause.getMessage()), cause);
     }
     
     public AuditPersistenceException(String operation, int batchSize, SQLException cause) {
-        super("AUD-002", operation,
+        super("AUDIT-INFRASTRUCTURE-002", operation,
               String.format("Audit batch persistence failed for %d events: %s", batchSize, cause.getMessage()), cause);
     }
 }
@@ -172,7 +172,7 @@ public class AuditPersistenceException extends InfrastructureException {
 // Audit Query Exceptions
 public class AuditQueryException extends InfrastructureException {
     public AuditQueryException(String operation, String queryContext, SQLException cause) {
-        super("AUD-003", operation,
+        super("AUDIT-INFRASTRUCTURE-003", operation,
               String.format("Audit query failed: %s - %s", queryContext, cause.getMessage()), cause);
     }
 }
@@ -548,9 +548,9 @@ mp.fault-tolerance.retry.maxDuration=10000
 # Timeout Configuration
 mp.fault-tolerance.timeout.value=5000
 
-# OpenTelemetry Configuration
-quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://jaeger:14250
-quarkus.opentelemetry.tracer.exporter.otlp.headers=Authorization=Bearer ${TRACING_TOKEN:}
+# OpenTelemetry Configuration (Quarkus 3.x quarkus.otel.* form — ADR-21 is canonical)
+quarkus.otel.exporter.otlp.traces.endpoint=${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+quarkus.otel.exporter.otlp.traces.protocol=grpc
 
 # Logging Configuration
 quarkus.log.level=INFO

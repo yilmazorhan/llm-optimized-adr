@@ -26,7 +26,7 @@ Adopt Google Java Style Guide with Quarkus-specific modifications, enforced thro
 - **MUST** be compatible with CDI, reactive programming, and Quarkus framework patterns.
 - **MUST** provide consistent formatting across IntelliJ IDEA, VS Code, and Eclipse.
 - **MUST NOT** introduce breaking changes to existing functionality during implementation.
-- Tests **MUST NOT** be skipped in standard build and verify commands; `-DskipTests` **MUST NOT** appear in `./mvnw clean verify` invocations.
+- Tests **MUST NOT** be skipped in standard build and verify commands; `-DskipTests` **MUST NOT** appear in `./mvnw clean verify` invocations. Exception: after a `verify` execution with tests has gated the pipeline, subsequent packaging and image-build invocations of the **same pipeline run** (ADR-31 `docker-app`, ADR-09 `package`) **MAY** use `-DskipTests` — tests have already run and re-execution is redundant; skipping in any invocation that has not been preceded by a test-gated `verify` **MUST NOT** occur.
 - Quality plugins **MUST** be bound to the default Maven lifecycle phases (`validate`, `verify`).
 
 # Alternatives:

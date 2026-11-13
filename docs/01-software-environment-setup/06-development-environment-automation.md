@@ -256,13 +256,13 @@ docker-build: ## Build Docker image
 	./mvnw clean package -pl container-app
 	docker build -f Dockerfile -t copilot-quarkus-app .
 
-install-libs: ## Install library modules only
+install-libs: ## Install library modules only (ADR-09 approved catalog)
 	@echo "📚 Installing library modules..."
-	./mvnw clean install -pl validation-library,security-library,metrics-library,configuration-library,exception-library,logging-library
+	./mvnw clean install -pl exception-library,i18n-library,validation-library,security-library,date-time-library
 
 install-business: ## Install business modules
 	@echo "🏢 Installing business modules..."
-	./mvnw clean install -pl user-business,user-external,user-api
+	./mvnw clean install -pl user-business,user-external,user-web-api,container-app -am
 
 verify: ## Run full verification with quality checks
 	@echo "✅ Running full verification..."
@@ -273,7 +273,7 @@ verify: ## Run full verification with quality checks
 - **Maven Version**: Managed by Maven Wrapper (consistent across environments)
 - **Java Version**: Java 21 (ADR-02)
 - **Quarkus Version**: 3.32.2 (ADR-08)
-- **Multi-module Structure**: 10 focused modules (ADR-09)
+- **Multi-module Structure**: Module types and approved library catalog per ADR-09
 
 ## Docker Compose Services:
 ```yaml

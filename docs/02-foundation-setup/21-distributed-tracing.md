@@ -234,7 +234,7 @@ public class JdbcUserRepositoryAdapter implements UserRepositoryPort {
         // Create a new span manually
         SpanBuilder spanBuilder = tracer.spanBuilder("Database.findUserById")
             .setSpanKind(SpanKind.CLIENT)
-            .setAttribute("db.system", "postgresql")
+            .setAttribute("db.system", "oracle")
             .setAttribute("db.operation", "SELECT")
             .setAttribute("db.table", "users")
             .setAttribute("user.id", id);
@@ -573,8 +573,8 @@ else
   FAIL=1
 fi
 
-# Check for Jaeger in Docker Compose
-COMPOSE_FILE=$(ls docker-compose*.yml docker-compose.yaml compose.yml 2>/dev/null | head -1)
+# Check for Jaeger in Docker Compose (local-env/ per ADR-06 constraint)
+COMPOSE_FILE=$(ls local-env/docker-compose*.yml local-env/docker-compose.yaml local-env/compose.yml docker-compose*.yml docker-compose.yaml compose.yml 2>/dev/null | head -1)
 if [ -n "$COMPOSE_FILE" ] && grep -q "jaeger" "$COMPOSE_FILE"; then
   echo "✅ Jaeger service in Docker Compose"
 else

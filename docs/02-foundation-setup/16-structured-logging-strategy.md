@@ -39,7 +39,7 @@ Quarkus JBoss Log Manager writes structured JSON when `quarkus.log.console.json=
 # Implementation Guidelines:
 
 ## Naming Conventions:
-- Log category names: `com.example.[module].[component]` (e.g., `com.example.user.service`)
+- Log category names: `com.copilot.quarkus.[module].[component]` (e.g., `com.copilot.quarkus.user.service`) — base package per ADR-11
 - MDC keys: camelCase (e.g., `correlationId`, `traceId`, `spanId`, `userId`)
 - Log message format: `[Action] [Entity/Context]: [Details]` (e.g., `Creating user: email=john@example.com`)
 - Filter classes: `[Purpose]RequestFilter` (e.g., `LoggingRequestFilter`)

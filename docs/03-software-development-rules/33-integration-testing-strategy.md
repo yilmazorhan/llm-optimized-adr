@@ -197,7 +197,7 @@ class UserResourceIntegrationTest {
         .then()
             .statusCode(409)
             .contentType("application/problem+json") // RFC 9457 (ADR-23)
-            .body("errorCode", equalTo("DOM-001"))   // ADR-17 error code registry
+            .body("errorCode", equalTo("USER-BUSINESS-002"))   // ADR-17/ADR-25 error code registry
             .body("correlationId", notNullValue());  // ADR-16 correlation
     }
 }
@@ -208,7 +208,7 @@ class UserResourceIntegrationTest {
 | Artifact | Convention | Example |
 |----------|-----------|---------|
 | Integration test class | `[ClassUnderTest]IntegrationTest` + `@Tag("integration")` (ADR-32) | `UserResourceIntegrationTest` |
-| Test profile | `[Purpose]TestProfile` | `PostgresParityTestProfile` |
+| Test profile | `[Purpose]TestProfile` | `OracleParityTestProfile` |
 | Test data builders | Reuse ADR-32 factories | `TestUsers.john()` |
 | REST request bodies | Reuse ADR-24 request DTOs | `TestUsers.createJohnRequest()` |
 

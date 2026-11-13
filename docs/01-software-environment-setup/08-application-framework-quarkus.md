@@ -82,7 +82,7 @@ Quarkus 3.32.2 documentation reports sub-second startup in JVM mode and ~70 MB R
 <?xml version="1.0"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.example</groupId>
+  <groupId>com.copilot</groupId> <!-- canonical groupId; base package com.copilot.quarkus per ADR-11 -->
   <artifactId>quarkus-project</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   
