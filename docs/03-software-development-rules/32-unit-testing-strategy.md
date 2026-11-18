@@ -16,6 +16,8 @@ Adopt JUnit 5 (Jupiter) with Mockito and AssertJ as the unit testing stack, with
 - **Structure**: Test classes **MUST** mirror production packages (ADR-11) and be named `[ClassUnderTest]Test`
 - **Coverage Gate**: JaCoCo **MUST** enforce ≥80% line coverage on domain packages via the `check` goal bound to `verify`
 - **Isolation**: Unit tests **MUST NOT** require external services or containers (database, Jaeger, Prometheus)
+- **Mock Boundaries**: Mocks **MUST** be limited to system-boundary ports (external APIs, time, randomness, storage); own classes and internal collaborators **MUST NOT** be mocked, and boundary ports **MUST** be SDK-style (one method per operation) and constructor-injected (see Section 5)
+- **Behavior-Focused Tests**: Tests **MUST** verify observable behavior through the public API (returned values, thrown error codes, state readable through another public method), not implementation details (see Section 4)
 - **No Skips**: Tests **MUST NOT** be skipped in `./mvnw clean verify` (ADR-12)
 
 # Ownership
@@ -35,6 +37,12 @@ Adopt JUnit 5 (Jupiter) with Mockito and AssertJ as the unit testing stack, with
 - The unit test phase per module **SHOULD** complete in under 60 seconds on CI hardware
 - Error path assertions **MUST** verify ADR-17/ADR-25 error codes (e.g., `USER-BUSINESS-002`), not only exception types
 - Mocks in domain tests **MUST** target port interfaces only (ADR-10, ADR-11)
+- Domain and application code **MUST NOT** call `Instant.now()`, `LocalDateTime.now()`, `UUID.randomUUID()`, or `new Random()` directly; time and randomness **MUST** be injected (`Clock`, supplier) so tests can fix them
+- Boundary ports **MUST NOT** expose generic fetcher methods (e.g., `fetch(String endpoint, ...)`); each external operation **MUST** have its own typed method
+- Tests **MUST NOT** assert on internal collaborator interactions (`Mockito.verify`, `times(n)`, `InOrder`); port mocks **MUST** be used to stub inputs, and outcomes **MUST** be asserted on results
+- Tests **MUST NOT** invoke private methods (reflection, `setAccessible`) or verify state by bypassing the public API (e.g., querying the database directly instead of reading back through the service or port)
+- Expected values **MUST** be independent literals; tests **MUST NOT** recompute the expected value using the production algorithm (tautological tests)
+- Each test method **MUST** contain one logical assertion (multiple AssertJ calls are allowed only when they describe the same outcome, e.g., `assertThat(...).extracting(...)` chains)
 
 # Alternatives:
 
@@ -121,7 +129,184 @@ class UserServiceTest {
 }
 ```
 
-## 4. Reactive Assertion Rules
+## 4. Good and Bad Tests
+
+### Good Tests
+
+Good tests are **integration-style within the unit boundary**: they exercise the code through its real public interface (service methods, with port mocks or in-memory adapters only at the hexagonal boundary), not through mocks of internal parts.
+
+```java
+// GOOD: Tests observable behavior
+@Test
+void shouldConfirmOrderWhenCartIsValid() {
+    Cart cart = TestCarts.withProduct(TestProducts.keyboard());
+
+    Order order = checkoutService.checkout(cart, TestPayments.validCard())
+        .await().atMost(Duration.ofSeconds(1));
+
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+}
+```
+
+Characteristics:
+- Tests behavior callers care about
+- Uses public API only
+- Survives internal refactors
+- Describes WHAT, not HOW
+- One logical assertion per test
+
+### Bad Tests
+
+**Implementation-detail tests** are coupled to internal structure.
+
+```java
+// BAD: Tests implementation details (name describes HOW, asserts on call)
+@Test
+void checkoutCallsPaymentServiceProcess() {
+    checkoutService.checkout(cart, payment).await().atMost(Duration.ofSeconds(1));
+
+    Mockito.verify(paymentProcessor).process(cart.getTotal()); // internal collaborator call
+}
+```
+
+Red flags:
+- Mocking internal collaborators (only port interfaces **MAY** be mocked, ADR-10/ADR-11)
+- Testing private methods
+- Asserting on call counts or call order (`Mockito.verify`, `times(n)`, `InOrder`)
+- Test breaks when refactoring without behavior change
+- Test name describes HOW, not WHAT (violates `should[Expected]When[Condition]`, Section 8)
+- Verifying through external means instead of the interface
+
+```java
+// BAD: Bypasses the interface to verify
+@Test
+void createUserSavesToDatabase() {
+    userService.createUser(TestUsers.createAliceCommand()).await().atMost(Duration.ofSeconds(1));
+
+    User row = entityManager.createQuery("from User where name = 'Alice'", User.class)
+        .getSingleResult();
+    assertThat(row).isNotNull();
+}
+
+// GOOD: Verifies through the interface (in-memory port adapter, Section 8)
+@Test
+void shouldMakeUserRetrievableWhenUserIsCreated() {
+    UserService service = new UserService(new InMemoryUserRepositoryAdapter());
+
+    User created = service.createUser(TestUsers.createAliceCommand())
+        .await().atMost(Duration.ofSeconds(1));
+    User retrieved = service.getUser(created.getId())
+        .await().atMost(Duration.ofSeconds(1));
+
+    assertThat(retrieved.getName()).isEqualTo("Alice");
+}
+```
+
+**Tautological tests**: the expected value restates the implementation, so the test passes by construction.
+
+```java
+// BAD: Expected value is recomputed the way the code computes it
+@Test
+void shouldSumLineItems() {
+    List<LineItem> items = List.of(TestLineItems.priced(10), TestLineItems.priced(5));
+    int expected = items.stream().mapToInt(LineItem::getPrice).sum();
+
+    assertThat(calculator.calculateTotal(items)).isEqualTo(expected);
+}
+
+// GOOD: Expected value is an independent, known literal
+@Test
+void shouldSumLineItems() {
+    List<LineItem> items = List.of(TestLineItems.priced(10), TestLineItems.priced(5));
+
+    assertThat(calculator.calculateTotal(items)).isEqualTo(15);
+}
+```
+
+> **Note**: Section 3 stubs port methods with `Mockito.when(...)` to supply inputs; this is permitted because ports are the architectural boundary. Asserting *that* a port method was invoked is not permitted unless the call itself is the externally observable outcome (e.g., a published event port) and no result can be read back instead.
+
+## 5. When to Mock and Designing for Mockability
+
+### When to Mock
+
+Mock at **system boundaries only** — the hexagonal output ports (ADR-10, ADR-11) that the domain uses to reach the outside world:
+
+| Boundary | Guidance |
+|----------|----------|
+| External APIs (payment, email, etc.) | **MUST** mock the output port (`PaymentGatewayPort`, `EmailSenderPort`); the REST client adapter is covered by integration tests |
+| Databases | **Prefer a real test database** (HSQLDB / Testcontainers, ADR-07, BR-001) in integration tests; in unit tests, substitute the repository port with an in-memory adapter or Mockito stub |
+| Time / randomness | **MUST** inject `java.time.Clock` and an ID/random supplier; tests supply `Clock.fixed(...)` and fixed values |
+| File system | Prefer JUnit 5 `@TempDir` over mocking; mock a storage port only when real I/O is impractical |
+
+Don't mock:
+- Your own classes and modules (domain services, entities, value objects, mappers)
+- Internal collaborators
+- Anything you control
+
+### Designing for Mockability
+
+At system boundaries, design port interfaces that are easy to mock.
+
+**1. Use dependency injection**
+
+Pass external dependencies in through the constructor (CDI constructor injection, ADR-08) rather than creating them internally:
+
+```java
+// GOOD: Easy to mock - dependencies injected through the constructor
+@ApplicationScoped
+public class PaymentService {
+
+    private final PaymentGatewayPort paymentGateway;
+    private final Clock clock;
+
+    @Inject
+    public PaymentService(PaymentGatewayPort paymentGateway, Clock clock) {
+        this.paymentGateway = paymentGateway;
+        this.clock = clock;
+    }
+
+    public Uni<PaymentReceipt> processPayment(Order order) {
+        return paymentGateway.charge(order.getTotal(), Instant.now(clock));
+    }
+}
+
+// BAD: Hard to mock - creates its own client, reads configuration and time directly
+public class PaymentService {
+
+    public Uni<PaymentReceipt> processPayment(Order order) {
+        StripeClient client = new StripeClient(System.getenv("STRIPE_KEY"));
+        return client.charge(order.getTotal(), Instant.now());
+    }
+}
+```
+
+**2. Prefer SDK-style interfaces over generic fetchers**
+
+Define one specific method per external operation instead of one generic method with conditional logic:
+
+```java
+// GOOD: Each method is independently mockable and returns one specific type
+public interface UserApiPort {
+    Uni<UserDto> getUser(String id);
+    Uni<List<OrderDto>> getOrders(String userId);
+    Uni<OrderDto> createOrder(CreateOrderRequest request);
+}
+
+// BAD: Mocking requires conditional logic inside the stub
+public interface ApiPort {
+    <T> Uni<T> fetch(String endpoint, HttpMethod method, Object body, Class<T> responseType);
+}
+```
+
+For HTTP integrations, the Quarkus REST Client interface (`@RegisterRestClient`) follows the same style: one annotated method per endpoint (`@GET @Path("/users/{id}") Uni<UserDto> getUser(@PathParam("id") String id)`), wrapped by an adapter that implements the domain port (https://quarkus.io/guides/rest-client).
+
+The SDK-style approach means:
+- Each mock returns one specific shape
+- No conditional logic in test setup (no `thenAnswer` switching on the endpoint string)
+- Easier to see which operations a test exercises
+- Type safety per operation
+
+## 6. Reactive Assertion Rules
 
 | Pattern | Status |
 |---------|--------|
@@ -130,7 +315,7 @@ class UserServiceTest {
 | `Thread.sleep(...)` | **FORBIDDEN** |
 | Subscribing without a terminal operation | **FORBIDDEN** (assertions may run before emission) |
 
-## 5. Coverage Gate (JaCoCo)
+## 7. Coverage Gate (JaCoCo)
 
 ```xml
 <plugin>
@@ -168,7 +353,7 @@ class UserServiceTest {
 </plugin>
 ```
 
-## 6. Naming Conventions
+## 8. Naming Conventions
 
 | Artifact | Convention | Example |
 |----------|-----------|---------|
@@ -178,7 +363,7 @@ class UserServiceTest {
 | Test data builder | `Test[PluralEntity]` factory | `TestUsers.john()` |
 | In-memory adapter | `InMemory[Entity]RepositoryAdapter` (ADR-11 suffix) | `InMemoryUserRepositoryAdapter` |
 
-## 7. Maven Commands
+## 9. Maven Commands
 
 | Command | Purpose | Notes |
 |---------|---------|-------|
@@ -190,7 +375,8 @@ class UserServiceTest {
 # Additional Recommendations:
 
 - **RECOMMENDED** Use test data builders (`TestUsers.john()`) over inline object construction in every test method.
-- **RECOMMENDED** Verify one behavior per test method; the method name **MUST** describe the behavior under test.
+- **RECOMMENDED** Verify one behavior per test method; the method name **MUST** describe the behavior under test (WHAT), not the implementation (HOW).
+- **RECOMMENDED** Apply the refactor check during review: if renaming or restructuring internals without changing behavior breaks a test, rewrite that test (Section 4).
 - **RECOMMENDED** Use in-memory port adapters for stateful domain behavior; use Mockito mocks for stateless calls.
 - **MAY** enable JUnit 5 parallel execution for pure domain tests via `junit-platform.properties` (`junit.jupiter.execution.parallel.enabled=true`); integration tests **MUST NOT** run in parallel.
 - **RECOMMENDED** Review the JaCoCo report when adding domain exceptions so every ADR-17 error code has at least one covering test.
@@ -215,6 +401,11 @@ class UserServiceTest {
 | Naming Convention | `find . -path "*src/test/java*" -name "*.java"` | All test classes end with `Test` |
 | No Thread.sleep | `grep -r "Thread.sleep" */src/test/java` | Zero matches |
 | No Untracked Disables | `grep -r "@Disabled" */src/test/java` | Zero matches without tracking ID |
+| No Interaction Assertions | `grep -rnE "Mockito\.verify\|verify\(\|InOrder\|times\(" */src/test/java` | Zero matches in domain tests (except documented event-port outcomes) |
+| Injected Time/Randomness | `grep -rnE "Instant\.now\(\)\|LocalDateTime\.now\(\)\|UUID\.randomUUID\(\)\|new Random\(" */src/main/java \| grep domain` | Zero matches |
+| Boundary-Only Mocks | Code review (Section 5) | `Mockito.mock` targets port interfaces only; no mocks of own classes |
+| No Private Access | `grep -rnE "setAccessible\|getDeclaredMethod" */src/test/java` | Zero matches |
+| Behavior Review | Code review (Section 4 red flags) | No implementation-detail or tautological tests |
 | Coverage Gate | `./mvnw clean verify` | Exit code 0 (JaCoCo check passes) |
 | Tests Not Skipped | `./mvnw clean verify` | Exit code 0 without `-DskipTests` (ADR-12) |
 
@@ -267,6 +458,24 @@ if [ "$DISABLED" -eq 0 ]; then
   echo "✅ No disabled tests"
 else
   echo "❌ @Disabled found: $DISABLED occurrences (require tracking IDs)"
+  FAIL=1
+fi
+
+# No interaction assertions or private-method access in tests
+IMPL_COUNT=$(grep -rnE "Mockito\.verify|[^a-zA-Z]verify\(|InOrder|times\(|setAccessible|getDeclaredMethod" */src/test/java 2>/dev/null | wc -l | tr -d ' ')
+if [ "$IMPL_COUNT" -eq 0 ]; then
+  echo "✅ No implementation-detail assertions in tests"
+else
+  echo "❌ Implementation-detail assertions found: $IMPL_COUNT occurrences (see Section 4)"
+  FAIL=1
+fi
+
+# Domain code must use injected time/randomness
+NOW_COUNT=$(grep -rnE "Instant\.now\(\)|LocalDateTime\.now\(\)|UUID\.randomUUID\(\)|new Random\(" */src/main/java 2>/dev/null | grep "domain" | wc -l | tr -d ' ')
+if [ "$NOW_COUNT" -eq 0 ]; then
+  echo "✅ No direct time/randomness calls in domain code"
+else
+  echo "❌ Direct time/randomness calls in domain code: $NOW_COUNT occurrences (inject Clock/supplier, Section 5)"
   FAIL=1
 fi
 
