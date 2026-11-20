@@ -28,53 +28,63 @@ This feature defines the YAML specification for dashboard configurations includi
 ## 3. Acceptance Criteria / Scenarios
 
 ```gherkin
+# BR-002-01, BR-002-15
 Scenario: Valid dashboard YAML is loaded successfully
   Given a YAML file "dashboards/merchant_settlement_ledger.yaml" exists with valid structure
   When the Quarkus backend starts or detects a file modification
   Then the dashboard configuration is parsed and cached in-memory
   And no validation errors are reported
 
+# BR-002-03, BR-002-04
 Scenario: Dashboard YAML missing required field is rejected
   Given a YAML file exists without the required "sqltable" property
   When the backend attempts to validate the configuration
   Then a schema validation error is raised
   And the dashboard is not loaded into the cache
 
+# BR-002-06
 Scenario: Invalid column type is rejected
   Given a YAML file defines a column with type "json"
   When the backend validates the configuration
   Then a schema validation error is raised indicating invalid enum value for column type
 
+# BR-002-09
 Scenario: Dynamic filter without lookup_sql is rejected
   Given a YAML file defines a filter of type "dynamic_kv" without a "lookup_sql" property
   When the backend validates the configuration
   Then a schema validation error is raised indicating missing required property
 
+# BR-002-12, BR-002-13, BR-002-16
 Scenario: Partial text masking applied correctly
   Given a dashboard defines masking_rules with strategy "partial_text" for column "merchant_name"
   When query results contain "Orhan Yılmaz" for that column
   Then the masked value returned to the client is "O**** Y*****"
 
+# BR-002-13, BR-002-14
 Scenario: Suffix-only masking applied correctly
   Given a dashboard defines masking_rules with strategy "suffix_only" and visible_chars_end=4 for column "destination_iban"
   When query results contain "TR5600010009" for that column
   Then the masked value returned to the client is "XXXXXXXX0009"
 
+# BR-002-13
 Scenario: Email masking applied correctly
   Given a dashboard defines masking_rules with strategy "email_mask" for column "merchant_email"
   When query results contain "user@paycell.com.tr" for that column
   Then the masked value returned to the client is "u***r@paycell.com.tr"
 
+# BR-002-13
 Scenario: Full redact masking applied correctly
   Given a dashboard defines masking_rules with strategy "full_redact" for a column
   When query results contain any value for that column
   Then the masked value returned to the client is "[REDACTED]"
 
+# BR-002-02
 Scenario: Dashboard ID uniqueness enforced
   Given two YAML files exist with the same "dashboard_id" value
   When the backend loads configurations
   Then a conflict error is reported and the duplicate is rejected
 
+# BR-002-11
 Scenario: SQL without deterministic ORDER BY is rejected
   Given a YAML file whose "sql" lacks an ORDER BY clause ending in a unique tiebreaker column
   When the backend validates the configuration
@@ -86,13 +96,14 @@ Scenario: SQL without deterministic ORDER BY is rejected
 
 | Concern | ADR Reference(s) | Plan Details | Verified |
 |---------|-------------------|--------------|----------|
-| Security | ADR-18 | Masking applied server-side before serialization; no raw sensitive data transmitted | Yes (`MaskingService` + `MaskingServiceTest`; `maskRow` proven leak-free) |
+| Security | ADR-18, ADR-19 | Masking applied server-side before serialization; no raw sensitive data transmitted | Yes (`MaskingService` + `MaskingServiceTest`; `maskRow` proven leak-free) |
 | Logging | ADR-16 | Schema validation errors logged with structured JSON format | Yes (`LocalizedLogger` + `LocalizedLoggerTest`; JSON console in `%prod`) |
 | i18n | ADR-25, ADR-26 | Column labels support localized display names | Yes (`MessageResolver` + `messages_{en,es,fr,de}.properties`; `MessageResolverTest`) |
 | Observability | ADR-20, ADR-21 | Schema loading and validation traced via OpenTelemetry spans | Partial (structured logging done; OTel spans deferred to the BR-004 execution path) |
 | Configuration | ADR-15 | Datasource names mapped to configured database connections in application.properties | Yes (`reporting.datasources` allow-list; unknown datasource rejected at load) |
-| Error Handling | ADR-23 | Validation failures returned as RFC 9457 Problem Details | Partial (typed domain exceptions + error codes at the service layer; the `application/problem+json` REST mapper is BR-003 scope — no endpoint in BR-002) |
-| Code Quality | ADR-12 | YAML parsing POJOs follow Google Java Style, validated by Spotless | Yes (Spotless/Checkstyle/PMD/SpotBugs in the `quality` Maven profile; `make lint-quality`) |
+| Error Handling | ADR-17, ADR-23 | Validation failures returned as RFC 9457 Problem Details | Partial (typed domain exceptions + error codes at the service layer; the `application/problem+json` REST mapper is BR-003 scope — no endpoint in BR-002) |
+| Code Quality | ADR-12 | Quality gates per ADR-12 §Decision | TBD (previous evidence relied on an opt-in `quality` profile; re-verify against ADR-12) |
+| Comment Standards | ADR-34 | Traceability grammar per ADR-34 | TBD |
 | Testing | ADR-32, ADR-33 | Masking strategies as pure unit tests; schema validation as `@QuarkusTest` integration tests | Yes (see section 5b) |
 
 ### Implementation & Verification Notes (Evidence — ADR-30 §Decision)
@@ -100,12 +111,7 @@ Scenario: SQL without deterministic ORDER BY is rejected
 > Per ADR-30: evidence that business rules are satisfied **MUST** be located in the BRD's `logs/` folder
 > (test reports, application logs, implementation plans, decisions).
 
-- Modules (ADR-09/10/11, hexagonal; module types per the ADR-09 taxonomy): `platform-domain`
-  (**Business System** module — model, `MaskingService`, `DashboardRegistry`, error codes),
-  `platform-infrastructure` (**External System** module — YAML source, JSON meta-schema validator,
-  Git watcher), `container-app` (**Container** module — Quarkus deployment assembly: startup
-  validation, file monitoring, datasource mapping). Library dependencies come from the ADR-09
-  approved catalog only (`exception-library`, `i18n-library`).
+- Modules: module types and placement **MUST** follow ADR-09 (module taxonomy, approved library catalog) and ADR-10/ADR-11 (ports, adapters, naming). *Existing implementation placing startup validation or the file watcher in the Container module, or error codes outside `exception-library`, must be re-verified against ADR-09.*
 - The JSON meta-schema is the file from section 8, stored at
   `platform-infrastructure/src/main/resources/schema/dashboard-meta-schema.json` and enforced by the
   `networknt` draft-07 validator.
@@ -114,16 +120,27 @@ Scenario: SQL without deterministic ORDER BY is rejected
 - Out-of-scope items (REST endpoint, SQL execution, pagination, authn/z) remain deferred to BR-003/BR-004
   as declared in section 6.
 
+> **Evidence status (ADR-30 §Decision)**: the notes above cite tests, but `requirements/BR-002-*/logs/` does not exist yet. The `Yes` values are unverified until test reports and logs are stored there.
+
 ## 5. Related ADRs
 
 - ADR-08: Application Framework (Quarkus) — Runtime engine for YAML processing and validation
+- ADR-09: Multi-Module Structure — Module types and approved library catalog
 - ADR-10: Software Architecture (Hexagonal) — Schema registry as infrastructure adapter
+- ADR-11: Package Structure Organization — Ports, adapters, package layout
 - ADR-12: Code Quality Standards — Code formatting and static analysis
 - ADR-15: Application Configuration Management — Datasource connection mapping
 - ADR-16: Structured Logging Strategy — Validation error logging
+- ADR-17: Exception Handling (Reactive) — Typed domain exceptions and error codes
 - ADR-18: Security Implementation (OWASP) — Data masking as security control
+- ADR-19: Audit Logging Strategy — PII masking rules for audit data
+- ADR-20: Observability Strategy — Validation tracing and metrics
+- ADR-21: Distributed Tracing — Schema loading spans
 - ADR-23: REST API Error Handling — RFC 9457 error responses for validation failures
 - ADR-25: Internationalization Strategy — Localized column labels
+- ADR-26: Message Externalization — Message bundles for validation messages
+- ADR-32: Unit Testing Strategy — Masking unit tests
+- ADR-33: Integration Testing Strategy — Schema validation and watcher integration tests
 - ADR-34: Code Comment Standards — Traceability comments (`BR-002-NN`) in masking and schema code
 
 ## 5b. Test Classification (ADR-32/ADR-33)
@@ -149,7 +166,7 @@ Scenario: SQL without deterministic ORDER BY is rejected
 - REST API endpoint implementation (see BR-003)
 - SQL query execution and type enforcement (see BR-004)
 - Pagination logic (see BR-004)
-- User authentication and authorization
+- User authentication and authorization of the query endpoint (see BR-003-19)
 - Frontend dashboard rendering
 
 ## 7. Dashboard YAML Configuration Example

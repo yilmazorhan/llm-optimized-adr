@@ -8,11 +8,13 @@ As a **developer**, I want **a fully configured development environment with all
 
 - **BR-000-01**: The development environment **MUST** provide JDK 21.0.4 (Eclipse Temurin) managed via SDKMAN, per ADR-02 §Decision.
 - **BR-000-02**: All builds **MUST** use Maven 3.9.8 through the committed Maven Wrapper, per ADR-03 §Decision.
-- **BR-000-03**: Toolchain versions **MUST** be pinned in `.sdkmanrc` and validated by `setup.sh`, per ADR-04 §Decision.
-- **BR-000-04**: Containerization **MUST** use Docker 24.0+ with Docker Compose 2.24+ (Compose auto-detection), per ADR-05 §Decision.
-- **BR-000-05**: Environment automation **MUST** be provided via Makefile, `setup.sh`, and Docker Compose services (Jaeger, Prometheus, Grafana), per ADR-06 §Decision.
+- **BR-000-03**: Toolchain pinning and validation **MUST** follow ADR-04 §Decision.
+- **BR-000-04**: Containerization **MUST** use Docker and Docker Compose as specified in ADR-05 §Decision (versions, Compose auto-detection, resource limits).
+- **BR-000-05**: Environment automation **MUST** be provided via Makefile, `setup.sh`, and Docker Compose services (Jaeger, Prometheus, Grafana), organized as specified in ADR-06 §Decision.
 - **BR-000-06**: The containerized development environment **MUST** follow the graduated approach (Dev Services → Compose → Testcontainers) with `host.docker.internal`, per ADR-07 §Decision.
 - **BR-000-07**: All applications **MUST** use Quarkus 3.32.2 with the platform BOM import, per ADR-08 §Decision.
+- **BR-000-08**: Code quality plugins **MUST** be bound as specified in ADR-12 §Decision so every `./mvnw clean verify` enforces them.
+- **BR-000-09**: `make artifacts` **MUST** produce the production build artifacts defined in ADR-31 §Decision.
 
 ## 3. Acceptance Criteria / Scenarios
 
@@ -24,7 +26,7 @@ Scenario: Environment setup completes successfully
   And the script exits with code 0
 
 Scenario: Active toolchain matches pinned versions
-  Given .sdkmanrc pins JDK 21.0.4-tem and Maven 3.9.8
+  Given the toolchain pins defined by ADR-04 (JDK 21.0.4-tem, Maven 3.9.8)
   When the setup.sh validation step runs
   Then the active JDK and Maven versions match the pinned values exactly
 
@@ -34,6 +36,11 @@ Scenario: Observability services are reachable
   Then Jaeger responds on localhost:16686
   And Prometheus responds on localhost:9090
   And Grafana responds on localhost:3000
+
+Scenario: Production artifacts are generated
+  Given the build passes "./mvnw clean verify"
+  When I run "make artifacts"
+  Then all production build artifacts defined in ADR-31 are produced
 
 Scenario: Quarkus dev mode boots on the platform
   When I run "make dev" in the container module
@@ -46,7 +53,7 @@ Scenario: Quarkus dev mode boots on the platform
 | Concern | ADR Reference(s) | Plan Details | Verified |
 |---------|-------------------|--------------|----------|
 | Java Runtime | ADR-02, ADR-04 | JDK 21.0.4-tem via .sdkmanrc | Yes |
-| Build Tooling | ADR-03, ADR-12 | Maven 3.9.8, Spotless 3.4.0, SpotBugs 4.9.8.3 | Yes |
+| Build Tooling | ADR-03, ADR-12 | Maven Wrapper and quality plugins per ADR-03 and ADR-12 | Yes |
 | Containerization | ADR-05, ADR-06 | Docker 24.0+, Compose auto-detection | Yes |
 | Observability | ADR-20, ADR-21, ADR-22 | Jaeger, Prometheus, Grafana with explicit UIDs | Yes |
 | Security | ADR-18 | OWASP headers, JWT RS256 | TBD (framework level) |
@@ -55,7 +62,14 @@ Scenario: Quarkus dev mode boots on the platform
 | Exception Handling | ADR-17 | Layered exception hierarchy | TBD (framework level) |
 | Package Structure | ADR-11 | Hexagonal architecture packages | TBD (framework level) |
 | Multi-Module | ADR-09 | Parent POM with dependency management | Yes |
+| Data Migration | ADR-14 | Flyway and Hibernate DDL policy per ADR-14 | TBD |
+| i18n | ADR-25, ADR-26 | Bundles and message externalization per ADR-25/26 | TBD |
+| Audit | ADR-19 | Audit logging infrastructure per ADR-19 | TBD |
+| Build Artifacts | ADR-31 | `make artifacts` per ADR-31 | TBD |
+| Comment Standards | ADR-34 | Traceability grammar per ADR-34 | TBD |
 | Testing | ADR-32, ADR-33 | Surefire/Failsafe phase split and JaCoCo coverage gate wired in parent POM | TBD |
+
+> **Evidence status (ADR-30 §Decision)**: ADR-30 requires satisfaction evidence in `requirements/BR-000-*/logs/`. That folder does not exist yet; every `Yes` in the checklist above is unverified until test reports, setup logs and decisions are stored there.
 
 ## 5. Related ADRs
 

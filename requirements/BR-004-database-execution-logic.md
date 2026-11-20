@@ -11,7 +11,7 @@ This feature defines the core backend execution pipelines including SQL injectio
 - **BR-004-01**: SQL queries **MUST** use parameterized binding via `query.setParameter(name, value)`; raw string concatenation of user inputs **SHALL NOT** be used.
 - **BR-004-02**: The YAML SQL template **MUST** be treated as an invariant compilation block; runtime user inputs **MUST** be bound as parameters only.
 - **BR-004-03**: The type enforcement guard **MUST** inspect `ResultSetMetaData.getColumnType()` before extracting any row data.
-- **BR-004-04**: The following JDBC types **MUST** be rejected with an immediate execution abort and HTTP 500 response: `Types.OTHER` (JSON/JSONB), `Types.STRUCT`, `Types.BLOB`, `Types.CLOB`, `Types.ARRAY`.
+- **BR-004-04**: The following JDBC types **MUST** be rejected with an immediate execution abort and HTTP 500 response (error code `QUERY-SECURITY-001`, BR-003-24): `Types.OTHER` (JSON/JSONB), `Types.STRUCT`, `Types.BLOB`, `Types.CLOB`, `Types.ARRAY`.
 - **BR-004-05**: VARCHAR/TEXT columns **MUST** map to `java.lang.String` and serialize as JSON string.
 - **BR-004-06**: BIGINT/INT columns **MUST** map to `java.lang.Long` or `java.lang.Integer` and serialize as JSON integer (int64).
 - **BR-004-07**: DECIMAL/NUMERIC columns **MUST** map to `java.math.BigDecimal` and serialize as JSON string to prevent IEEE-754 precision loss.
@@ -27,35 +27,43 @@ This feature defines the core backend execution pipelines including SQL injectio
 - **BR-004-17**: The hypermedia response builder **MUST** generate `next` link only when `hasNext = true`.
 - **BR-004-18**: The hypermedia response builder **MUST** generate `prev` link only when `offset > 0`.
 - **BR-004-19**: BigDecimal values **MUST** be serialized as JSON strings via a custom Jackson serializer registered through a Quarkus `ObjectMapperCustomizer` CDI bean (e.g., Jackson `ToStringSerializer` for `BigDecimal`). A global `quarkus.jackson.*` property **MUST NOT** be relied upon for this rule: no such property exists, and Jackson's `WRITE_BIGDECIMAL_AS_PLAIN` still emits a JSON number, not a string (https://quarkus.io/guides/rest-json).
-- **BR-004-20**: Database exception details **MUST** be written to infrastructure logs only; sanitized error tokens **MUST** be returned to API callers.
+- **BR-004-20**: Database exception details **MUST** be written to infrastructure logs only; callers **MUST** receive the sanitized problem response defined by BR-003-13 and BR-003-17. Exception translation follows ADR-17.
+- **BR-004-21**: Bound parameter values and result rows **MUST NOT** be logged or attached to spans/metrics; log content rules follow ADR-16.
+- **BR-004-22**: Query execution **MUST** be a domain port implemented by an infrastructure adapter per ADR-10 and ADR-11; the domain layer **MUST NOT** depend on JDBC or `EntityManager` types.
+- **BR-004-23**: Log and error messages **MUST** be externalized per ADR-26.
 
 ## 3. Acceptance Criteria / Scenarios
 
 ```gherkin
+# BR-004-01, BR-004-02
 Scenario: Parameterized query prevents SQL injection
   Given a dashboard SQL template with named parameter ":channel_filter"
-  When a user submits filter_inputs with channel_filter="'; DROP TABLE users; --"
+  When a user submits filterInputs with channel_filter="'; DROP TABLE users; --"
   Then the value is bound as a parameter via setParameter
   And the SQL template is not modified
   And no SQL injection occurs
 
+# BR-004-03, BR-004-04
 Scenario: Type enforcement rejects JSON column
   Given a database table has a column of type JSONB
   When the query executes and ResultSetMetaData reports Types.OTHER
   Then execution aborts immediately
-  And a 500 error response is returned with a security violation message
+  And a 500 error response is returned with errorCode "QUERY-SECURITY-001" and a generic message
 
+# BR-004-03, BR-004-04
 Scenario: Type enforcement rejects BLOB column
   Given a database table has a column of type BLOB
   When the query executes and ResultSetMetaData reports Types.BLOB
   Then execution aborts immediately
   And a 500 error response is returned
 
+# BR-004-07, BR-004-19
 Scenario: BigDecimal serialized as plain string
   Given a column of type DECIMAL contains value 12450.75
   When the row is serialized to JSON
   Then the value appears as "12450.75" (string type, not 12450.75 number)
 
+# BR-004-12, BR-004-13, BR-004-14, BR-004-17
 Scenario: Look-ahead pagination detects more results
   Given the database has 50 matching rows
   When I request offset=0, limit=20
@@ -64,6 +72,7 @@ Scenario: Look-ahead pagination detects more results
   And the response contains 20 items
   And the response links include "next" with offset=20
 
+# BR-004-15, BR-004-17
 Scenario: Look-ahead pagination detects end of results
   Given the database has 35 matching rows
   When I request offset=20, limit=20
@@ -72,17 +81,19 @@ Scenario: Look-ahead pagination detects end of results
   And the response contains 15 items
   And the response links do not include "next"
 
+# BR-004-16
 Scenario: Offset applied correctly
   Given the database has 100 matching rows
   When I request offset=40, limit=20
   Then setFirstResult(40) is applied
   And rows 41-60 are returned (0-indexed: 40-59)
 
+# BR-004-20, BR-004-21
 Scenario: Database error logged but not exposed
   Given a database connection timeout occurs
   When the query execution fails
-  Then the full exception with SQL text is logged at ERROR level
-  And the API response contains only a generic "internal error" message
+  Then the exception and SQL template text are logged at ERROR level without bound parameter values
+  And the API response status is 504 with a generic message, "errorCode" and "correlationId"
   And no SQL query text appears in the response body
 ```
 
@@ -91,22 +102,36 @@ Scenario: Database error logged but not exposed
 | Concern | ADR Reference(s) | Plan Details | Verified |
 |---------|-------------------|--------------|----------|
 | Security | ADR-18 | Parameterized queries prevent SQL injection; type guard blocks complex type leakage | TBD |
-| Logging | ADR-16 | Query execution metrics and errors logged with structured JSON; SQL text in logs only | TBD |
-| Observability | ADR-20, ADR-21 | Spans for query execution, parameter binding, type checking, pagination | TBD |
-| Error Handling | ADR-23 | Database errors sanitized to RFC 9457 responses | TBD |
-| Configuration | ADR-15 | Jackson BigDecimal serialization configured in application.properties | TBD |
-| Architecture | ADR-10 | Query execution service in domain layer; database access via port/adapter | TBD |
+| Logging | ADR-16 | Structured logs without bound values or rows (BR-004-21) | TBD |
+| i18n | ADR-25, ADR-26 | Externalized messages (BR-004-23) | TBD |
+| Observability | ADR-20, ADR-21, ADR-22 | Query execution spans and metrics | TBD |
+| Error Handling | ADR-17, ADR-23 | Exception translation and sanitized responses (BR-004-20) | TBD |
+| Configuration | ADR-15 | Datasource/Agroal configuration only; BigDecimal-as-string via an `ObjectMapperCustomizer` CDI bean, not a property (BR-004-19) | TBD |
+| Architecture | ADR-09, ADR-10, ADR-11 | Port/adapter placement (BR-004-22) | TBD |
+| Code Quality | ADR-12 | Quality gates per ADR-12 | TBD |
+| Testing | ADR-32, ADR-33 | Unit tier for mapping/pagination logic; integration tier on HSQLDB (BR-001) | TBD |
+| Comment Standards | ADR-34 | Traceability grammar per ADR-34 | TBD |
 
 ## 5. Related ADRs
 
 - ADR-08: Application Framework (Quarkus) — RESTEasy Reactive, Agroal datasource
+- ADR-09: Multi-Module Structure — Module placement of domain vs. infrastructure code
 - ADR-10: Software Architecture (Hexagonal) — Domain service and adapter pattern
-- ADR-15: Application Configuration Management — Jackson configuration properties
-- ADR-16: Structured Logging Strategy — Error detail logging
+- ADR-11: Package Structure Organization — `*Port` / `*Adapter` naming
+- ADR-12: Code Quality Standards — Formatting and static analysis
+- ADR-15: Application Configuration Management — Datasource configuration
+- ADR-16: Structured Logging Strategy — Error detail logging and sanitization
+- ADR-17: Exception Handling (Reactive) — Infrastructure exception translation and error codes
 - ADR-18: Security Implementation (OWASP) — SQL injection prevention, type enforcement
 - ADR-20: Observability Strategy — Query execution metrics
 - ADR-21: Distributed Tracing — Execution span instrumentation
+- ADR-22: Application Monitoring & Observability — Execution metrics
 - ADR-23: REST API Error Handling — Error sanitization and RFC 9457 format
+- ADR-25: Internationalization Strategy — Localized log/error messages
+- ADR-26: Message Externalization — `LocalizedLogger`, `MessageKeys`
+- ADR-32: Unit Testing Strategy — Unit tier for mapping and pagination logic
+- ADR-33: Integration Testing Strategy — Execution tests on HSQLDB (Tier 1) and Oracle (Tier 2)
+- ADR-34: Code Comment Standards — Traceability comments
 
 ## 6. Scope
 
@@ -149,11 +174,11 @@ Scenario: Database error logged but not exposed
 - **Task 1.1:** Initialize Quarkus infrastructure with Java 21 LTS; add `quarkus-rest`, `quarkus-rest-jackson`, and `quarkus-agroal` dependencies (Quarkus 3.x artifact names per ADR-08).
 - **Task 1.2:** Add YAML parsing dependency: `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml`.
 - **Task 1.3:** Build `DashboardSchema` POJO mapping YAML block literals to multi-line string properties.
-- **Task 1.4:** Build `GitSchemaRegistry` with file observer threads loading configurations into `ConcurrentHashMap`.
+- **Task 1.4:** Build `GitDashboardRegistryAdapter` (implements `DashboardRegistryPort`) with file observer threads loading configurations into `ConcurrentHashMap`.
 
 ### Phase 2: Secure Query Execution & Guardrails
 
-- **Task 2.1:** Build `QueryExecutionService` injecting `EntityManager` for database routing.
+- **Task 2.1:** Define `QueryExecutionPort` in the domain and build `JdbcQueryExecutionAdapter` in `platform-infrastructure` injecting `EntityManager` for database routing (BR-004-22).
 - **Task 2.2:** Implement parameter binding mapping filter inputs to `query.setParameter(key, value)`.
 - **Task 2.3:** Build `TypeEnforcementFilter` using `ResultSetMetaData.getColumnType()` to abort on non-primitive types.
 - **Task 2.4:** Register an `ObjectMapperCustomizer` CDI bean applying `ToStringSerializer` to `BigDecimal` (BR-004-19; decimal-as-string contract shared with BR-003-09).
@@ -162,7 +187,7 @@ Scenario: Database error logged but not exposed
 
 - **Task 3.1:** Apply offset via `query.setFirstResult(offset)`.
 - **Task 3.2:** Apply look-ahead limit via `query.setMaxResults(limit + 1)`.
-- **Task 3.3:** Build `HypermediaResponseFilter` to detect extra row, set `hasNext`, and generate navigation links.
+- **Task 3.3:** Build the hypermedia link builder in the web adapter layer (`infrastructure.web.*`) to consume `hasNext` and generate navigation links.
 
 ### Phase 4: Data Masking Middleware
 
@@ -174,4 +199,4 @@ Scenario: Database error logged but not exposed
 
 - **Task 5.1:** Register global `ExceptionMapper<Throwable>` for all unhandled exceptions.
 - **Task 5.2:** Build `ProblemResponseFilter` ensuring all errors output `application/problem+json`.
-- **Task 5.3:** Build database exception sanitizers routing detail to logs, returning safe tokens to callers.
+- **Task 5.3:** Build database exception translators mapping `SQLException` to ADR-17 infrastructure exceptions (`INFRA-INFRASTRUCTURE-002`/`-003`), routing detail to logs and returning `errorCode`/`correlationId` to callers.
